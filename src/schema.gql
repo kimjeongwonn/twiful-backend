@@ -1,0 +1,72 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Recruit {
+  id: ID!
+  published: Boolean!
+  host: Profile!
+  requesters: [User!]!
+  matches: [User!]!
+  caption: String!
+  fromDate: DateTime!
+  toDate: DateTime
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Category {
+  id: ID!
+  name: String!
+  tastes: [Taste!]!
+}
+
+type Comment {
+  id: ID!
+  taste: Taste!
+  author: Profile!
+  updatedAt: DateTime!
+}
+
+type Taste {
+  id: ID!
+  category: Category!
+  name: String!
+  recommends: [Taste!]!
+  likers: [Profile!]!
+  dislikes: [Profile!]!
+  comments: [Comment!]!
+  createAt: DateTime!
+}
+
+type Profile {
+  id: ID!
+  user: User!
+  userName: String!
+  email: String!
+  bio: String
+  profileImage: String
+  likes: [Taste!]!
+  dislikes: [Taste!]!
+  recruit: Recruit!
+  createAt: DateTime!
+}
+
+type User {
+  id: ID!
+
+  """twitter ID"""
+  twitterId: Int!
+  profile: Profile
+  friends: [User!]!
+  friendRequest: [User!]!
+  blocks: [User!]!
+  createAt: DateTime!
+}
+
+type Query {
+  hello: String!
+}
