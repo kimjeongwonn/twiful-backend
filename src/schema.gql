@@ -39,6 +39,11 @@ type Recruit {
   toDate: DateTime
 }
 
+type Link {
+  id: ID!
+  linkUrl: String!
+}
+
 type Profile {
   id: ID!
   user: User!
@@ -48,6 +53,7 @@ type Profile {
   likes: [Taste!]!
   dislikes: [Taste!]!
   reviews: [Review!]!
+  links: [Link!]!
   recruit: Recruit!
 }
 

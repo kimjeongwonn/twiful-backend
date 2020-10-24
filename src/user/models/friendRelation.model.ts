@@ -1,10 +1,8 @@
-import { Recruit } from 'src/recruit/models/recruit.model';
 import {
   Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from './user.model';

@@ -24,11 +24,11 @@ export class User {
   id: number;
 
   @MaxLength(12)
-  @Column('varchar', { length: 12 })
+  @Column('varchar', { length: 12, unique: true })
   @Field()
   username: string;
 
-  @Column()
+  @Column({ unique: true })
   @Field(type => Int, { description: 'twitter ID' })
   twitterId: number;
 
