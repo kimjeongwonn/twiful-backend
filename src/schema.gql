@@ -2,33 +2,10 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Recruit {
-  id: ID!
-  published: Boolean!
-  host: Profile!
-  requesters: [User!]!
-  matches: [User!]!
-  caption: String!
-  fromDate: DateTime!
-  toDate: DateTime
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
 type Category {
   id: ID!
   name: String!
   tastes: [Taste!]!
-}
-
-type Comment {
-  id: ID!
-  taste: Taste!
-  author: Profile!
-  updatedAt: DateTime!
 }
 
 type Taste {
@@ -37,36 +14,68 @@ type Taste {
   name: String!
   recommends: [Taste!]!
   likers: [Profile!]!
-  dislikes: [Profile!]!
-  comments: [Comment!]!
-  createAt: DateTime!
+  dislikers: [Profile!]!
+  reviews: [Review!]!
+}
+
+type Review {
+  id: ID!
+  taste: Taste!
+  author: Profile!
+  updatedAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Recruit {
+  id: ID!
+  published: Boolean!
+  host: Profile!
+  caption: String!
+  fromDate: DateTime!
+  toDate: DateTime
 }
 
 type Profile {
   id: ID!
   user: User!
-  userName: String!
   email: String!
   bio: String
   profileImage: String
   likes: [Taste!]!
   dislikes: [Taste!]!
+  reviews: [Review!]!
   recruit: Recruit!
-  createAt: DateTime!
 }
 
 type User {
   id: ID!
+  username: String!
 
   """twitter ID"""
   twitterId: Int!
   profile: Profile
   friends: [User!]!
-  friendRequest: [User!]!
-  blocks: [User!]!
-  createAt: DateTime!
+  friendsCount: ID!
+  overlappedFriends: [User!]!
+  blocked: [User!]!
+  isSelf: Boolean!
+  isFriend: Boolean!
 }
 
 type Query {
-  hello: String!
+  lookAll: User!
+
+  """return my User account"""
+  lookMe: User!
+  lookUser(userId: ID!): User!
+}
+
+type Mutation {
+  createUser(username: String!): User!
+  removeUser: Boolean!
+  syncFriends: Boolean!
 }

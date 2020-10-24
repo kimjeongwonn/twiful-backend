@@ -3,8 +3,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { ProfileModule } from './profile/profile.module';
-import { CategoryModule } from './category/category.module';
-import { CommentModule } from './comment/comment.module';
+import { ReviewModule } from './review/review.module';
 import { RecruitModule } from './recruit/recruit.module';
 import { TasteModule } from './taste/taste.module';
 
@@ -12,8 +11,7 @@ import { TasteModule } from './taste/taste.module';
   imports: [
     UserModule,
     ProfileModule,
-    CategoryModule,
-    CommentModule,
+    ReviewModule,
     RecruitModule,
     TasteModule,
     GraphQLModule.forRoot({
