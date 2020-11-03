@@ -6,6 +6,8 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -13,6 +15,7 @@ import {
 import { Recruit } from '../../recruit/models/recruit.model';
 import { Taste } from '../../taste/models/taste.model';
 import { User } from '../../user/models/user.model';
+import { ProfileService } from '../profile.service';
 import { Link } from './link.model';
 
 @Entity()
@@ -25,15 +28,16 @@ export class Profile {
   @OneToOne(
     type => User,
     user => user.profile,
+    { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   @JoinColumn()
   @Field(type => User)
   user: User;
 
   @IsEmail()
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   @Field()
-  email: string;
+  email?: string;
 
   @Column({ nullable: true })
   @Field({ nullable: true })
@@ -43,17 +47,21 @@ export class Profile {
   @Field({ nullable: true })
   profileImage?: string;
 
-  @OneToMany(
+  @ManyToMany(
     type => Taste,
     taste => taste.likers,
+    { cascade: true },
   )
+  @JoinTable()
   @Field(type => [Taste])
   likes: Taste[];
 
-  @OneToMany(
+  @ManyToMany(
     type => Taste,
     taste => taste.dislikers,
+    { cascade: true },
   )
+  @JoinTable()
   @Field(type => [Taste])
   dislikes: Taste[];
 
@@ -78,6 +86,9 @@ export class Profile {
   @Field(type => Recruit)
   recruit: Recruit;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;
+
+  @Column({ type: 'timestamp' })
+  lastLoginAt: Date;
 }

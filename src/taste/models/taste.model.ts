@@ -6,6 +6,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -21,6 +22,7 @@ export class Taste {
   @ManyToOne(
     type => Category,
     category => category.tastes,
+    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
   )
   @Field(type => Category)
   category: Category;
@@ -29,17 +31,14 @@ export class Taste {
   @Field()
   name: string;
 
-  @Field(type => [Taste]) //FR
-  recommends: Taste[];
-
-  @ManyToOne(
+  @ManyToMany(
     type => Profile,
     profile => profile.likes,
   )
   @Field(type => [Profile])
   likers: Profile[];
 
-  @ManyToOne(
+  @ManyToMany(
     type => Profile,
     profile => profile.dislikes,
   )

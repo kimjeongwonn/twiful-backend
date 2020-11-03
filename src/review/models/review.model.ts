@@ -13,6 +13,7 @@ export class Review {
   @ManyToOne(
     type => Taste,
     taste => taste.reviews,
+    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
   )
   @Field(type => Taste)
   taste: Taste;
@@ -20,6 +21,7 @@ export class Review {
   @ManyToOne(
     type => Profile,
     profile => profile.reviews,
+    { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   @Field(type => Profile)
   author: Profile;

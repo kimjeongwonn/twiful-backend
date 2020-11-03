@@ -1,10 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './models/review.model';
 
 @Injectable()
 export class ReviewService {
-  constructor(
-    @Inject('REVIEW_REPOSITORY') private userRepository: Repository<Review>,
-  ) {}
+  constructor(@InjectRepository(Review) tasteRepository: Repository<Review>) {}
 }

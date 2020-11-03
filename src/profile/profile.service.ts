@@ -1,10 +1,13 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Link } from './models/link.model';
 import { Profile } from './models/profile.model';
 
 @Injectable()
 export class ProfileService {
   constructor(
-    @Inject('PROFILE_REPOSITORY') private userRepository: Repository<Profile>,
+    @InjectRepository(Profile) profileRepository: Repository<Profile>,
+    @InjectRepository(Link) linkRepository: Repository<Link>,
   ) {}
 }

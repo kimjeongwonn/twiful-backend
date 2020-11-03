@@ -13,6 +13,7 @@ export class Link {
   @ManyToOne(
     type => Profile,
     profile => profile.links,
+    { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   host: Profile;
 

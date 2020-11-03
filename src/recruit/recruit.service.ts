@@ -1,10 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Recruit } from './models/recruit.model';
 
 @Injectable()
 export class RecruitService {
   constructor(
-    @Inject('RECRUIT_REPOSITORY') private userRepository: Repository<Recruit>,
+    @InjectRepository(Recruit) recruitRepository: Repository<Recruit>,
   ) {}
 }

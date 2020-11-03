@@ -8,7 +8,7 @@ import {
   OneToMany,
   CreateDateColumn,
   ManyToMany,
-  JoinColumn,
+  JoinTable,
 } from 'typeorm';
 import { MaxLength } from 'class-validator';
 import { UserService } from '../user.service';
@@ -17,20 +17,25 @@ import { FriendRelation } from './friendRelation.model';
 @Entity()
 @ObjectType()
 export class User {
-  constructor(private readonly userService: UserService) {}
-
   @PrimaryGeneratedColumn()
   @Field(type => ID)
   id: number;
 
-  @MaxLength(12)
-  @Column('varchar', { length: 12, unique: true })
+  @Column('varchar', { unique: true })
   @Field()
   username: string;
 
+  @Column({ unique: true, nullable: true })
+  @Field({ description: 'twitter ID' })
+  twitterId: string;
+
   @Column({ unique: true })
-  @Field(type => Int, { description: 'twitter ID' })
-  twitterId: number;
+  @Field({ description: 'twitter API Token', nullable: true })
+  twitterToken?: string;
+
+  @Column({ unique: true })
+  @Field({ nullable: true })
+  twitterSecret?: string;
 
   @OneToOne(
     type => Profile,
@@ -51,23 +56,12 @@ export class User {
   )
   friendRequests: FriendRelation[];
 
-  @Field(type => [User]) //FR
-  friends: User[];
-
-  @Field(type => ID)
-  async friendsCount(@Parent() root: User): Promise<number> {
-    const result = await this.userService.findAll();
-    return result[0].id;
-  }
-
-  @Field(type => [User]) //FR
-  overlappedFriends: User[];
-
   @ManyToMany(
     type => User,
     user => user.beBlocked,
+    { cascade: true },
   )
-  @JoinColumn()
+  @JoinTable()
   @Field(type => [User])
   blocked: User[];
 
@@ -77,15 +71,6 @@ export class User {
   )
   beBlocked: User[];
 
-  @Field() //FR
-  isSelf: boolean;
-
-  @Field() //FR
-  isFriend: boolean;
-
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;
-
-  @Column()
-  lastLoginAt: Date;
 }

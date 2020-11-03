@@ -22,6 +22,7 @@ export class Recruit {
   @OneToOne(
     type => Profile,
     profile => profile.recruit,
+    { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   @JoinColumn()
   @Field(type => Profile)

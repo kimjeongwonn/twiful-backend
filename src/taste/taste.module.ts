@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from 'src/database/database.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category } from './models/category.model';
 import { Taste } from './models/taste.model';
-import { tasteProviders } from './taste.provider';
 import { TasteResolver } from './taste.resolver';
 import { TasteService } from './taste.service';
 
 @Module({
-  imports: [DatabaseModule],
-  providers: [TasteService, TasteResolver, Taste, ...tasteProviders],
+  imports: [TypeOrmModule.forFeature([Taste, Category])],
+  providers: [TasteService, TasteResolver],
 })
 export class TasteModule {}
