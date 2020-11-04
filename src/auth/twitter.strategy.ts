@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy as Twitter } from 'passport-twitter';
 import { User } from 'src/user/models/user.model';
@@ -53,7 +53,7 @@ export class TwitterStrategy extends PassportStrategy(Twitter) {
         //사용자도 프로필도 없기 때문에 둘 다 생성
       }
     }
-
+    if (!signedUser) throw new UnauthorizedException();
     return signedUser;
   }
 }

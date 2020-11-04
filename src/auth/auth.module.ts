@@ -8,10 +8,14 @@ import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { Profile } from 'src/profile/models/profile.model';
+import { TwitterAuthGuard } from './guards/twitter-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+require('dotenv').config();
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Profile]),
+    PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '60m' },

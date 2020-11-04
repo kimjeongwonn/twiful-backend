@@ -22,6 +22,7 @@ import * as typeormConfig from './config/typeorm';
     TasteModule,
     GraphQLModule.forRoot({
       autoSchemaFile: join(__dirname, '/schema.gql'),
+      context: ({ req }) => ({ req }),
     }),
   ],
 })

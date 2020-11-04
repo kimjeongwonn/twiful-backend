@@ -1,4 +1,4 @@
-import { HttpService, Req } from '@nestjs/common';
+import { HttpService, UseGuards, Req } from '@nestjs/common';
 import {
   Resolver,
   Query,
@@ -10,6 +10,7 @@ import {
   Root,
   Context,
 } from '@nestjs/graphql';
+import { GqlAuthGuard, JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { User } from './models/user.model';
 import { UserService } from './user.service';
 
@@ -50,9 +51,10 @@ export class UserResolver {
     return this.userService.findAll();
   }
 
+  @UseGuards(GqlAuthGuard)
   @Query(returns => User)
-  async getToken(@Context() ctx: Express.Request) {
-    return ctx.user;
+  async authTest(@Context() ctx: Express.Context) {
+    return ctx.req.user;
   }
 
   @Query(returns => User, { description: 'return my User account' })

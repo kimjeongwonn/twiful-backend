@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/models/user.model';
 import { Connection, Repository } from 'typeorm';
 import { Profile } from 'src/profile/models/profile.model';
-import AES from 'crypto-js/aes';
 import { includedUserData } from './twitter.strategy';
 import { JwtService } from '@nestjs/jwt';
+const AES = require('crypto-js/aes');
 
 @Injectable()
 export class AuthService {
@@ -15,6 +15,10 @@ export class AuthService {
     private connection: Connection,
     private jwtService: JwtService,
   ) {}
+
+  async getUserData(userId) {
+    return this.userRepo.findOne(userId, { relations: ['profile'] });
+  }
 
   async validateUser(twitterId: string): Promise<User | null> {
     const currUser = await this.userRepo.findOne({
@@ -43,8 +47,8 @@ export class AuthService {
   ): Promise<User> {
     const { twitterToken, twitterSecret } = twitterUser;
     const key = process.env.TWITTER_API_SECRET_ENCRYPTION_KEY;
-    // const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
-    const encryptedTwitterSecret = twitterSecret;
+    const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
+    // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
     await this.connection.transaction(async manager => {
@@ -64,8 +68,8 @@ export class AuthService {
   async createUserandProfile(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username, twitterToken, twitterSecret } = twitterUser;
     const key = process.env.TWITTER_API_SECRET_ENCRYPTION_KEY;
-    // const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
-    const encryptedTwitterSecret = twitterSecret;
+    const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
+    // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
 
@@ -84,9 +88,7 @@ export class AuthService {
   }
 
   signToken(user) {
-    const payload = { id: user.id };
-    return this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-    });
+    const payload = { id: user.id, twitterId: user.twitterId };
+    return this.jwtService.sign(payload);
   }
 }
