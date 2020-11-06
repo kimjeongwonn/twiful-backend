@@ -9,72 +9,83 @@ import {
   Int,
   Root,
   Context,
+  ArgsType,
+  Field,
 } from '@nestjs/graphql';
-import { GqlAuthGuard, JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { GqlAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { User } from './models/user.model';
 import { UserService } from './user.service';
 
+@ArgsType()
+class PaginationArgs {
+  @Field(type => Int)
+  take: number = 20;
+
+  @Field(type => Int)
+  page: number = 0;
+}
+
 @Resolver(of => User)
 export class UserResolver {
-  constructor(
-    private readonly userService: UserService,
-    private readonly httpService: HttpService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @ResolveField(type => [User]) //FR
-  friends(@Root() root: User): User[] {
-    return;
+  async friends(
+    @Root() root: User,
+    @Args() { take, page }: PaginationArgs,
+  ): Promise<User[]> {
+    return this.userService.getFriends(root.id, take, page);
   }
 
   @ResolveField(type => Int)
-  friendsCount(): number {
-    return;
+  async friendsCount(@Root() root: User): Promise<number> {
+    return this.userService.countFriends(root.id);
   }
 
   @ResolveField(type => [User]) //FR
   overlappedFriends(): User[] {
     return;
   }
+  //구현해야함
 
+  @UseGuards(GqlAuthGuard)
   @ResolveField() //FR
-  isSelf(): boolean {
-    return;
+  isSelf(@Root() root: User, @Context() ctx: Express.Context): boolean {
+    return root.id === ctx.req.user.id;
   }
 
-  @ResolveField() //FR
-  isFriend(): boolean {
-    return;
+  @UseGuards(GqlAuthGuard)
+  @ResolveField(type => Boolean) //FR
+  async isFriend(
+    @Root() root: User,
+    @Context() ctx: Express.Context,
+  ): Promise<boolean> {
+    return this.userService.isFriend(root.id, ctx.req.user.id);
   }
 
-  @Query(returns => User)
+  @Query(returns => [User])
   async lookAll() {
     return this.userService.findAll();
   }
 
   @UseGuards(GqlAuthGuard)
-  @Query(returns => User)
-  async authTest(@Context() ctx: Express.Context) {
-    return ctx.req.user;
-  }
-
   @Query(returns => User, { description: 'return my User account' })
-  async lookMe() {
-    return '';
+  async lookMe(@Context() ctx: Express.Context): Promise<User> {
+    return this.userService.findOne(ctx.req.user.id);
   }
 
   @Query(returns => User)
-  async lookUser(@Args('userId', { type: () => ID }) id: string) {
-    return '';
+  async lookUser(@Args('id', { type: () => ID }) id: number) {
+    return this.userService.findOne(id);
   }
 
-  @Mutation(returns => User)
-  async createUser(@Args('username') username: string) {
-    return this.userService.createUser(username);
-  }
-
+  @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)
-  async removeUser() {
-    return true;
+  async addFriend(
+    @Context() ctx: Express.Context,
+    @Args('targetId') targetId: number,
+  ) {
+    return this.userService.addFriend(ctx.req.user.id, targetId);
   }
 
   @Mutation(returns => Boolean)

@@ -10,8 +10,6 @@ import {
   ManyToMany,
   JoinTable,
 } from 'typeorm';
-import { MaxLength } from 'class-validator';
-import { UserService } from '../user.service';
 import { FriendRelation } from './friendRelation.model';
 
 @Entity()

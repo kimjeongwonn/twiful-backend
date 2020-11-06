@@ -10,7 +10,7 @@ import { User } from './user.model';
 @Entity()
 export class FriendRelation {
   @PrimaryGeneratedColumn()
-  id: number; //uuid
+  id: number;
 
   @ManyToOne(
     type => User,
@@ -18,6 +18,9 @@ export class FriendRelation {
     { onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   friendRequester: User;
+
+  @Column()
+  friendRequesterId: number;
 
   @ManyToOne(
     type => User,
@@ -27,11 +30,14 @@ export class FriendRelation {
   friendReciver: User;
 
   @Column()
+  friendReciverId: number;
+
+  @Column({ default: false })
   concluded: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;
 
-  @Column()
-  concludedAt: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  concludedAt?: Date;
 }

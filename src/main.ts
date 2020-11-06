@@ -1,11 +1,13 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { User as UserModel } from './user/models/user.model';
 const session = require('express-session');
 require('dotenv').config();
 
 declare global {
   namespace Express {
+    interface User extends UserModel {}
     interface Context {
       req: Express.Request;
     }

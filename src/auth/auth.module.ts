@@ -18,7 +18,6 @@ require('dotenv').config();
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '60m' },
     }),
   ],
   providers: [AuthService, TwitterStrategy, JwtStrategy],

@@ -11,7 +11,6 @@ const AES = require('crypto-js/aes');
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(User) private profileRepo: Repository<Profile>,
     private connection: Connection,
     private jwtService: JwtService,
   ) {}
