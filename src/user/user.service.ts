@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ifError } from 'assert';
 import { Repository } from 'typeorm';
 import { FriendRelation } from './models/friendRelation.model';
 import { User } from './models/user.model';
+
+export type friendStatusT =
+  | 'friended'
+  | 'not'
+  | 'requested'
+  | 'recived'
+  | 'self';
 
 @Injectable()
 export class UserService {
@@ -37,16 +43,19 @@ export class UserService {
     return this.userRepository.findOne(setFindOne);
   }
 
-  //친구인지 확인
-  async isFriend(id, targetId): Promise<boolean> {
+  //친구상태 확인
+  async friendStatus(id: number, targetId: number): Promise<friendStatusT> {
+    if (id === targetId) return 'self';
     const result = await this.friendRelationRepository.findOne({
-      select: ['id'],
       where: [
-        { friendReciverId: id, friendRequesterId: targetId, concluded: true },
-        { friendReciverId: targetId, friendRequesterId: id, concluded: true },
+        { friendReciverId: id, friendRequesterId: targetId },
+        { friendReciverId: targetId, friendRequesterId: id },
       ],
     });
-    return !!result.id;
+    if (!result) return 'not';
+    if (result.concluded) return 'friended';
+    else if (result.friendRequesterId === id) return 'requested';
+    else return 'recived';
   }
 
   //친구목록 불러오기
@@ -56,7 +65,7 @@ export class UserService {
     page: number = 0,
   ): Promise<User[]> {
     const friendsResult = await this.friendRelationRepository.find({
-      select: ['id'],
+      select: ['id', 'friendReciverId', 'friendRequesterId'],
       where: [
         { friendRequesterId: id, concluded: true },
         { friendReciverId: id, concluded: true },
@@ -78,7 +87,7 @@ export class UserService {
     page: number = 0,
   ): Promise<User[]> {
     const result = await this.friendRelationRepository.find({
-      select: ['id'],
+      select: ['id', 'friendReciverId'],
       where: [{ friendRequesterId: id, concluded: false }],
       relations: ['friendReciver'],
       take,
@@ -94,7 +103,7 @@ export class UserService {
     page: number = 0,
   ): Promise<User[]> {
     const result = await this.friendRelationRepository.find({
-      select: ['id'],
+      select: ['id', 'friendRequesterId'],
       where: [{ friendReciverId: id, concluded: false }],
       relations: ['friendRequester'],
       take,
@@ -107,8 +116,8 @@ export class UserService {
   async countFriends(id: number): Promise<number> {
     return this.friendRelationRepository.count({
       where: [
-        { friendRequester: id, concluded: true },
-        { friendReciver: id, concluded: true },
+        { friendRequesterId: id, concluded: true },
+        { friendReciverId: id, concluded: true },
       ],
     });
   }
@@ -116,7 +125,7 @@ export class UserService {
   //친구 신청수 세기
   async countRequestedFriends(id: number): Promise<number> {
     return this.friendRelationRepository.count({
-      where: [{ friendRequester: id, concluded: false }],
+      where: [{ friendRequesterId: id, concluded: false }],
     });
   }
 
@@ -129,6 +138,7 @@ export class UserService {
 
   //친구추가(친구요청/친구수락)
   async addFriend(id: number, targetId: number): Promise<boolean> {
+    if (id === targetId) return false;
     const existRelation = await this.friendRelationRepository.findOne({
       select: ['id'],
       where: { friendRequesterId: id, friendReciverId: targetId },

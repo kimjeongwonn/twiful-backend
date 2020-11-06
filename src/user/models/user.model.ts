@@ -23,16 +23,14 @@ export class User {
   @Field()
   username: string;
 
-  @Column({ unique: true, nullable: true })
-  @Field({ description: 'twitter ID' })
+  @Column({ unique: true })
+  @Field()
   twitterId: string;
 
-  @Column({ unique: true })
-  @Field({ description: 'twitter API Token', nullable: true })
+  @Column({ unique: true, nullable: true })
   twitterToken?: string;
 
-  @Column({ unique: true })
-  @Field({ nullable: true })
+  @Column({ unique: true, nullable: true })
   twitterSecret?: string;
 
   @OneToOne(

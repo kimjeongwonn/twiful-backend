@@ -14,7 +14,7 @@ import {
 } from '@nestjs/graphql';
 import { GqlAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { User } from './models/user.model';
-import { UserService } from './user.service';
+import { friendStatusT, UserService } from './user.service';
 
 @ArgsType()
 class PaginationArgs {
@@ -48,19 +48,17 @@ export class UserResolver {
   }
   //구현해야함
 
-  @UseGuards(GqlAuthGuard)
   @ResolveField() //FR
   isSelf(@Root() root: User, @Context() ctx: Express.Context): boolean {
     return root.id === ctx.req.user.id;
   }
 
-  @UseGuards(GqlAuthGuard)
-  @ResolveField(type => Boolean) //FR
-  async isFriend(
+  @ResolveField(type => String) //FR
+  async friendStatus(
     @Root() root: User,
     @Context() ctx: Express.Context,
-  ): Promise<boolean> {
-    return this.userService.isFriend(root.id, ctx.req.user.id);
+  ): Promise<friendStatusT> {
+    return this.userService.friendStatus(ctx.req.user.id, root.id);
   }
 
   @Query(returns => [User])
@@ -74,6 +72,7 @@ export class UserResolver {
     return this.userService.findOne(ctx.req.user.id);
   }
 
+  @UseGuards(GqlAuthGuard)
   @Query(returns => User)
   async lookUser(@Args('id', { type: () => ID }) id: number) {
     return this.userService.findOne(id);
