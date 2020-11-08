@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy as Twitter } from 'passport-twitter';
+import { TwitterService } from 'src/twitter/twitter.service';
 import { User } from 'src/user/models/user.model';
 import { AuthService } from './auth.service';
 
@@ -10,7 +11,10 @@ export interface includedUserData extends Partial<User> {
 
 @Injectable()
 export class TwitterStrategy extends PassportStrategy(Twitter) {
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    private twitterService: TwitterService,
+  ) {
     super({
       consumerKey: process.env.TWITTER_API_KEY,
       consumerSecret: process.env.TWITTER_API_SECRET,

@@ -22,11 +22,13 @@ export class AuthController {
   @Get('twitter_callback')
   twitterCallbacks(@Req() req: Express.Request) {
     req.session.jwt = this.authService.signToken(req.user);
-    return '<script>window.history.back()</script>';
+    return '<script>window.location.href = "http://localhost:3001"</script>';
   }
 
   @Get('get_jwt')
   getTwitterToken(@Req() req: Express.Request) {
-    return req.session.jwt;
+    const jwt = req.session.jwt;
+    req.session.destroy(() => req.session);
+    return jwt;
   }
 }

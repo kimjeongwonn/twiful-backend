@@ -84,7 +84,7 @@ export class UserResolver {
     @Context() ctx: Express.Context,
     @Args('targetId') targetId: number,
   ) {
-    return this.userService.addFriend(ctx.req.user.id, targetId);
+    return this.userService.addFriend(ctx.req.user, targetId);
   }
 
   @Mutation(returns => Boolean)

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AuthService } from 'src/auth/auth.service';
+import { TwitterService } from 'src/twitter/twitter.service';
 import { Repository } from 'typeorm';
 import { FriendRelation } from './models/friendRelation.model';
 import { User } from './models/user.model';
@@ -17,6 +19,8 @@ export class UserService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(FriendRelation)
     private friendRelationRepository: Repository<FriendRelation>,
+    private twitterService: TwitterService,
+    private authService: AuthService,
   ) {}
 
   //전체사용자 리스트
@@ -137,28 +141,40 @@ export class UserService {
   }
 
   //친구추가(친구요청/친구수락)
-  async addFriend(id: number, targetId: number): Promise<boolean> {
-    if (id === targetId) return false;
+  async addFriend(user: User, targetId: number): Promise<boolean> {
+    if (user.id === targetId) return false;
+    //자기 자신은 친구요청 불가능
     const existRelation = await this.friendRelationRepository.findOne({
       select: ['id'],
-      where: { friendRequesterId: id, friendReciverId: targetId },
+      where: { friendRequesterId: user.id, friendReciverId: targetId },
     });
-    console.log(existRelation);
-    if (existRelation) return false; //이미 친구요청 상태
+    if (existRelation) return false;
+    //이미 친구요청 상태
     const existRequest = await this.friendRelationRepository.findOne({
       select: ['id'],
-      where: { friendRequesterId: targetId, friendReciverId: id },
+      where: { friendRequesterId: targetId, friendReciverId: user.id },
     });
     if (existRequest) {
       //내가 요청받은 상태이므로 친구승락
+      try {
+        //타겟 유저의 사용자 정보를 받아오기(토큰과 시크릿)
+        const targetUser: User = await this.authService.getUserData(targetId);
+        //서로 맞팔하기
+        await this.twitterService.followUser(user, targetUser);
+        await this.twitterService.followUser(targetUser, user);
+      } catch (e) {
+        //트위터 API 오류 발생시
+        throw e;
+      }
       await this.friendRelationRepository.update(existRequest.id, {
         concluded: true,
         concludedAt: new Date(),
       });
       return true;
     }
+    //최초 신청인 경우
     const newRelation = await this.friendRelationRepository.create();
-    newRelation.friendRequesterId = id;
+    newRelation.friendRequesterId = user.id;
     newRelation.friendReciverId = targetId;
     await this.friendRelationRepository.save(newRelation);
     return true;

@@ -9,6 +9,8 @@ import { TasteModule } from './taste/taste.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Connection } from 'typeorm';
 import { AuthModule } from './auth/auth.module';
+import { TwitterService } from './twitter/twitter.service';
+import { TwitterModule } from './twitter/twitter.module';
 import * as typeormConfig from './config/typeorm';
 
 @Module({
@@ -25,6 +27,7 @@ import * as typeormConfig from './config/typeorm';
       context: ({ req }) => ({ req }),
     }),
   ],
+  providers: [],
 })
 export class AppModule {
   constructor(private connection: Connection) {}

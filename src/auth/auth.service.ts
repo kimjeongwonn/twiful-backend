@@ -6,27 +6,39 @@ import { Profile } from 'src/profile/models/profile.model';
 import { includedUserData } from './twitter.strategy';
 import { JwtService } from '@nestjs/jwt';
 const AES = require('crypto-js/aes');
+const ENC = require('crypto-js').enc;
 
 @Injectable()
 export class AuthService {
+  private AES_KEY: string = process.env.TWITTER_API_SECRET_ENCRYPTION_KEY;
+
   constructor(
-    @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(User) private userRepository: Repository<User>,
     private connection: Connection,
     private jwtService: JwtService,
   ) {}
 
+  //userID에서 토큰 가져오기
   async getUserData(userId) {
-    return this.userRepo.findOne(userId, { relations: ['profile'] });
+    const user = await this.userRepository.findOne(userId, {
+      relations: ['profile'],
+    });
+    return {
+      ...user,
+      twitterSecret: AES.decrypt(user.twitterSecret, this.AES_KEY).toString(
+        ENC.Utf8,
+      ),
+    };
   }
 
   async validateUser(twitterId: string): Promise<User | null> {
-    const currUser = await this.userRepo.findOne({
+    const currUser = await this.userRepository.findOne({
       where: { twitterId },
     });
     return currUser;
   }
   async validateProfile(twitterToken: string): Promise<User | null> {
-    const currUser = await this.userRepo.findOne({
+    const currUser = await this.userRepository.findOne({
       where: { twitterToken },
     });
     return currUser;
@@ -34,10 +46,10 @@ export class AuthService {
 
   async createUser(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username } = twitterUser;
-    const newUser = this.userRepo.create();
+    const newUser = this.userRepository.create();
     newUser.twitterId = twitterId;
     newUser.username = username;
-    return this.userRepo.save(newUser);
+    return this.userRepository.save(newUser);
   }
 
   async createProfile(
@@ -45,8 +57,10 @@ export class AuthService {
     twitterUser: includedUserData,
   ): Promise<User> {
     const { twitterToken, twitterSecret } = twitterUser;
-    const key = process.env.TWITTER_API_SECRET_ENCRYPTION_KEY;
-    const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
+    const encryptedTwitterSecret = AES.encrypt(
+      twitterSecret,
+      this.AES_KEY,
+    ).toString();
     // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
@@ -66,8 +80,11 @@ export class AuthService {
 
   async createUserandProfile(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username, twitterToken, twitterSecret } = twitterUser;
-    const key = process.env.TWITTER_API_SECRET_ENCRYPTION_KEY;
-    const encryptedTwitterSecret = AES.encrypt(twitterSecret, key).toString();
+    console.log(twitterSecret);
+    const encryptedTwitterSecret = AES.encrypt(
+      twitterSecret,
+      this.AES_KEY,
+    ).toString();
     // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
