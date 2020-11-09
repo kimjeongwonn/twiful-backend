@@ -80,7 +80,6 @@ export class AuthService {
 
   async createUserandProfile(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username, twitterToken, twitterSecret } = twitterUser;
-    console.log(twitterSecret);
     const encryptedTwitterSecret = AES.encrypt(
       twitterSecret,
       this.AES_KEY,

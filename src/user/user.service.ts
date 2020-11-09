@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from 'src/auth/auth.service';
 import { TwitterService } from 'src/twitter/twitter.service';
-import { Repository } from 'typeorm';
+import { ArrayUtil } from 'src/util/util.array';
+import { FindManyOptions, Repository } from 'typeorm';
 import { FriendRelation } from './models/friendRelation.model';
 import { User } from './models/user.model';
 
@@ -21,6 +22,7 @@ export class UserService {
     private friendRelationRepository: Repository<FriendRelation>,
     private twitterService: TwitterService,
     private authService: AuthService,
+    private array: ArrayUtil,
   ) {}
 
   //전체사용자 리스트
@@ -63,21 +65,20 @@ export class UserService {
   }
 
   //친구목록 불러오기
-  async getFriends(
-    id: number,
-    take: number = 20,
-    page: number = 0,
-  ): Promise<User[]> {
-    const friendsResult = await this.friendRelationRepository.find({
+  async getFriends(id: number, take?: number, page?: number): Promise<User[]> {
+    const findOptions: FindManyOptions<FriendRelation> = {
       select: ['id', 'friendReciverId', 'friendRequesterId'],
       where: [
         { friendRequesterId: id, concluded: true },
         { friendReciverId: id, concluded: true },
       ],
       relations: ['friendReciver', 'friendRequester'],
-      take,
-      skip: take * page,
-    });
+    };
+    if (take && page) {
+      findOptions.take = take;
+      findOptions.skip = take * page;
+    }
+    const friendsResult = await this.friendRelationRepository.find(findOptions);
     return friendsResult.map(friend => {
       if (friend.friendReciverId === id) return friend.friendRequester;
       if (friend.friendRequesterId === id) return friend.friendReciver;
@@ -140,8 +141,23 @@ export class UserService {
     });
   }
 
+  //TWITTER API 사용하는 Services
+
   //친구추가(친구요청/친구수락)
-  async addFriend(user: User, targetId: number): Promise<boolean> {
+  async addFriend(
+    user: User,
+    targetId: number,
+    force: boolean = false,
+  ): Promise<boolean> {
+    if (force) {
+      const forceRelation = await this.friendRelationRepository.create();
+      forceRelation.friendRequesterId = user.id;
+      forceRelation.friendReciverId = targetId;
+      forceRelation.concluded = true;
+      forceRelation.concludedAt = new Date();
+      await this.friendRelationRepository.save(forceRelation);
+      return true;
+    }
     if (user.id === targetId) return false;
     //자기 자신은 친구요청 불가능
     const existRelation = await this.friendRelationRepository.findOne({
@@ -162,9 +178,9 @@ export class UserService {
         //서로 맞팔하기
         await this.twitterService.followUser(user, targetUser);
         await this.twitterService.followUser(targetUser, user);
-      } catch (e) {
+      } catch (err) {
         //트위터 API 오류 발생시
-        throw e;
+        throw err;
       }
       await this.friendRelationRepository.update(existRequest.id, {
         concluded: true,
@@ -177,6 +193,53 @@ export class UserService {
     newRelation.friendRequesterId = user.id;
     newRelation.friendReciverId = targetId;
     await this.friendRelationRepository.save(newRelation);
+    return true;
+  }
+
+  //트위터 친구목록 동기화
+  async syncFriends(user: User) {
+    interface compareUser {
+      id: number;
+      twitterId: string;
+    }
+
+    //트위터 맞팔목록 가져오기
+    const willSyncFriends = await this.twitterService.getTwitterFriends(user);
+    //현재 친구목록 가져오기
+    const currntFriends = await this.getFriends(user.id);
+    const [interFriends, diffFriends] = this.array.getArraySet(
+      willSyncFriends,
+      currntFriends,
+    );
+    if (diffFriends.length) {
+    }
+
+    //트위풀 친구와, 트위터 맞팔을 비교하여
+    //트위터에 효율적으로 동기화 다시하기
+    //차집합이 있으면 친구 해제
+    //합집합이 있으면 친구 추가 생략
+
+    //친구 추가하기
+    try {
+      await interFriends.forEach(async twitterUser => {
+        const existsUser = await this.userRepository.findOne({
+          twitterId: twitterUser.id_str,
+        });
+        if (!existsUser) {
+          // 동기화된 사용자가 존재하지 않는다면 새로운 비회원 계정 생성 후 친구로 설정
+          const newUser = this.userRepository.create();
+          newUser.twitterId = twitterUser.id_str;
+          newUser.username = twitterUser.screen_name;
+          const savedUser = await this.userRepository.save(newUser);
+          await this.addFriend(user, savedUser.id, true);
+        } else {
+          // 동기화된 사용자가 존재한다면, 친구로 설정
+          await this.addFriend(user, existsUser.id, true);
+        }
+      });
+    } catch (err) {
+      throw err;
+    }
     return true;
   }
 }

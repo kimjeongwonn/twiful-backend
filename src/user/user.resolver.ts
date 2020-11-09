@@ -87,8 +87,9 @@ export class UserResolver {
     return this.userService.addFriend(ctx.req.user, targetId);
   }
 
+  @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)
-  async syncFriends() {
-    return true;
+  async syncFriends(@Context() ctx: Express.Context) {
+    return this.userService.syncFriends(ctx.req.user);
   }
 }

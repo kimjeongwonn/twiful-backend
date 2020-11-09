@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { User } from 'src/user/models/user.model';
+import { ArrayUtil } from 'src/util/util.array';
 import * as Twitter from 'twitter';
+import { followersList, TwitterUserDto } from './twitter.interface';
 
 @Injectable()
 export class TwitterService {
+  constructor(private readonly array: ArrayUtil) {}
   private _client: Twitter;
 
+  //트위터 API 초기화
   private setTwitter({ twitterToken, twitterSecret }: User) {
     this._client = new Twitter({
       consumer_key: process.env.TWITTER_API_KEY,
@@ -15,10 +19,89 @@ export class TwitterService {
     });
   }
 
-  followUser(user: User, targetUser: User) {
+  //팔로워ID 가져오기
+  private async getFollower(user: User, cursor?: string) {
+    const param = cursor
+      ? { user_id: user.twitterId, cursor, stringify_ids: true }
+      : { user_id: user.twitterId, stringify_ids: true };
+    const result = await this._client.get('/followers/ids', param);
+    return result;
+  }
+
+  //모든 팔로워ID 가져오기 재귀함수
+  private async getFullFollowers(user: User, corsur?: string) {
+    try {
+      const tempList = (await this.getFollower(user)) as followersList;
+      if (tempList.next_cursor)
+        tempList.ids.push(
+          ...(await this.getFullFollowers(user, tempList.next_cursor_str)),
+        );
+      return tempList.ids;
+    } catch (err) {
+      if (err.code === 88) throw new Error('88 API 요청 초과');
+    }
+  }
+
+  //팔로잉ID 가져오기
+  private async getFollowing(user: User, cursor?: string) {
+    const param = cursor
+      ? { user_id: user.twitterId, cursor, stringify_ids: true }
+      : { user_id: user.twitterId, stringify_ids: true };
+    const result = await this._client.get('/friends/ids', param);
+    return result;
+  }
+
+  //모든 팔로잉ID 가져오기 재귀함수
+  private async getFullFollowings(user: User, corsur?: string) {
+    try {
+      const tempList = (await this.getFollowing(user)) as followersList;
+      if (tempList.next_cursor)
+        tempList.ids.push(
+          ...(await this.getFullFollowings(user, tempList.next_cursor_str)),
+        );
+      return tempList.ids;
+    } catch (err) {
+      if (err.code === 88) throw new Error('88 API 요청 초과');
+    }
+  }
+
+  //유저 팔로우하기
+  async followUser(user: User, targetUser: User) {
     this.setTwitter(user);
     return this._client.post('/friendships/create', {
       user_id: targetUser.twitterId,
     });
+  }
+
+  //유저 언팔로우
+  async unfollowUser(user: User, targetUser: User) {
+    this.setTwitter(user);
+    return this._client.post('/friendships/destroy', {
+      user_id: targetUser.twitterId,
+    });
+  }
+
+  //맞팔유저 가져오기
+  async getTwitterFriends(user: User) {
+    this.setTwitter(user);
+    const followers = await this.getFullFollowers(user);
+    const followings = await this.getFullFollowings(user);
+    const shorten =
+      followers.length > followings.length ? followings : followers;
+    const longest =
+      followers.length > followings.length ? followers : followings;
+
+    const [friendIds] = this.array.getArraySet(shorten, longest);
+    //arrayset 함수 검증필요
+    const result: TwitterUserDto[] = [];
+    do {
+      const splitArray = friendIds.splice(0, 100);
+      const splitResult = ((await this._client.get('/users/lookup', {
+        user_id: splitArray.join(','),
+      })) as unknown) as TwitterUserDto[];
+      result.push(...splitResult);
+    } while (friendIds.length >= 100);
+    //100명 이상이면 분할하여 GET요청
+    return result;
   }
 }
