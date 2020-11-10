@@ -2,15 +2,28 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ArrayUtil {
-  getArraySet<T>(shortArr: T[], longArr: T[]): [T[], T[]] {
-    const difference: T[] = [];
-    const intersection: T[] = [];
-    shortArr.forEach(x => {
-      if (longArr.includes(x)) intersection.push(x);
-      else difference.push(x);
+  getArraySet(inputA: any[], inputB: any[], propertyName?: string) {
+    const inter = [];
+
+    const diffA = inputA.filter(a => {
+      const compareA = propertyName ? a[propertyName] : a;
+      if (
+        inputB.find(b => {
+          const compareB = propertyName ? b[propertyName] : b;
+          return compareA === compareB;
+        })
+      )
+        inter.push(a);
+      else return true;
     });
-    return [intersection, difference];
+    const diffB = inputB.filter(b => {
+      const compareB = propertyName ? b[propertyName] : b;
+      return !inputA.find(a => {
+        const compareA = propertyName ? a[propertyName] : a;
+        return compareA === compareB;
+      });
+    });
+
+    return { inter, diff: { a: diffA, b: diffB } };
   }
 }
-
-//LEFT JOIN, RIGHT JOIN도 찾아내기

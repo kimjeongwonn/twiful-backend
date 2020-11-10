@@ -66,18 +66,18 @@ export class TwitterService {
   }
 
   //유저 팔로우하기
-  async followUser(user: User, targetUser: User) {
+  async followUser(user: User, targetUserTwitterId: string) {
     this.setTwitter(user);
     return this._client.post('/friendships/create', {
-      user_id: targetUser.twitterId,
+      user_id: targetUserTwitterId,
     });
   }
 
   //유저 언팔로우
-  async unfollowUser(user: User, targetUser: User) {
+  async unfollowUser(user: User, targetUserTwitterId: string) {
     this.setTwitter(user);
     return this._client.post('/friendships/destroy', {
-      user_id: targetUser.twitterId,
+      user_id: targetUserTwitterId,
     });
   }
 
@@ -91,16 +91,16 @@ export class TwitterService {
     const longest =
       followers.length > followings.length ? followers : followings;
 
-    const [friendIds] = this.array.getArraySet(shorten, longest);
+    const { inter } = this.array.getArraySet(shorten, longest);
     //arrayset 함수 검증필요
     const result: TwitterUserDto[] = [];
     do {
-      const splitArray = friendIds.splice(0, 100);
+      const splitArray = inter.splice(0, 100);
       const splitResult = ((await this._client.get('/users/lookup', {
         user_id: splitArray.join(','),
       })) as unknown) as TwitterUserDto[];
       result.push(...splitResult);
-    } while (friendIds.length >= 100);
+    } while (inter.length >= 100);
     //100명 이상이면 분할하여 GET요청
     return result;
   }

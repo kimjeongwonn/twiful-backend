@@ -18,7 +18,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  //userID에서 토큰 가져오기
+  //유저데이터 가져오기 (복호화)
   async getUserData(userId) {
     const user = await this.userRepository.findOne(userId, {
       relations: ['profile'],
@@ -31,12 +31,15 @@ export class AuthService {
     };
   }
 
+  //존재하는 계정 확인 및 반납
   async validateUser(twitterId: string): Promise<User | null> {
     const currUser = await this.userRepository.findOne({
       where: { twitterId },
     });
     return currUser;
   }
+
+  //존재하는 가입계정 확인 및 반납
   async validateProfile(twitterToken: string): Promise<User | null> {
     const currUser = await this.userRepository.findOne({
       where: { twitterToken },
@@ -44,6 +47,7 @@ export class AuthService {
     return currUser;
   }
 
+  //사용자 계정 만들기
   async createUser(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username } = twitterUser;
     const newUser = this.userRepository.create();
@@ -52,6 +56,7 @@ export class AuthService {
     return this.userRepository.save(newUser);
   }
 
+  //프로파일 생성
   async createProfile(
     userId: number,
     twitterUser: includedUserData,
@@ -61,7 +66,6 @@ export class AuthService {
       twitterSecret,
       this.AES_KEY,
     ).toString();
-    // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
     await this.connection.transaction(async manager => {
@@ -78,13 +82,13 @@ export class AuthService {
     return resultProfile.user;
   }
 
+  //사용자계정과 프로필 함께 생성
   async createUserandProfile(twitterUser: includedUserData): Promise<User> {
     const { twitterId, username, twitterToken, twitterSecret } = twitterUser;
     const encryptedTwitterSecret = AES.encrypt(
       twitterSecret,
       this.AES_KEY,
     ).toString();
-    // const encryptedTwitterSecret = twitterSecret;
 
     let resultProfile: Profile;
 
@@ -102,6 +106,7 @@ export class AuthService {
     return resultProfile.user;
   }
 
+  //JWT 생성
   signToken(user) {
     const payload = { id: user.id, twitterId: user.twitterId };
     return this.jwtService.sign(payload);
