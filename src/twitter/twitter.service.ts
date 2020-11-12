@@ -24,22 +24,22 @@ export class TwitterService {
     const param = cursor
       ? { user_id: user.twitterId, cursor, stringify_ids: true }
       : { user_id: user.twitterId, stringify_ids: true };
-    const result = await this._client.get('/followers/ids', param);
-    return result;
+    try {
+      const result = await this._client.get('/followers/ids', param);
+      return result;
+    } catch (err) {
+      throw err;
+    }
   }
 
   //모든 팔로워ID 가져오기 재귀함수
   private async getFullFollowers(user: User, corsur?: string) {
-    try {
-      const tempList = (await this.getFollower(user)) as followersList;
-      if (tempList.next_cursor)
-        tempList.ids.push(
-          ...(await this.getFullFollowers(user, tempList.next_cursor_str)),
-        );
-      return tempList.ids;
-    } catch (err) {
-      if (err.code === 88) throw new Error('88 API 요청 초과');
-    }
+    const tempList = (await this.getFollower(user)) as followersList;
+    if (tempList.next_cursor)
+      tempList.ids.push(
+        ...(await this.getFullFollowers(user, tempList.next_cursor_str)),
+      );
+    return tempList.ids;
   }
 
   //팔로잉ID 가져오기
@@ -47,22 +47,22 @@ export class TwitterService {
     const param = cursor
       ? { user_id: user.twitterId, cursor, stringify_ids: true }
       : { user_id: user.twitterId, stringify_ids: true };
-    const result = await this._client.get('/friends/ids', param);
-    return result;
+    try {
+      const result = await this._client.get('/friends/ids', param);
+      return result;
+    } catch (err) {
+      throw err;
+    }
   }
 
   //모든 팔로잉ID 가져오기 재귀함수
   private async getFullFollowings(user: User, corsur?: string) {
-    try {
-      const tempList = (await this.getFollowing(user)) as followersList;
-      if (tempList.next_cursor)
-        tempList.ids.push(
-          ...(await this.getFullFollowings(user, tempList.next_cursor_str)),
-        );
-      return tempList.ids;
-    } catch (err) {
-      if (err.code === 88) throw new Error('88 API 요청 초과');
-    }
+    const tempList = (await this.getFollowing(user)) as followersList;
+    if (tempList.next_cursor)
+      tempList.ids.push(
+        ...(await this.getFullFollowings(user, tempList.next_cursor_str)),
+      );
+    return tempList.ids;
   }
 
   //유저 팔로우하기
