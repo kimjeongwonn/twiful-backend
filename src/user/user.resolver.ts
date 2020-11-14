@@ -13,6 +13,7 @@ import {
   Field,
 } from '@nestjs/graphql';
 import { GqlAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { ArrayUtil } from 'src/util/util.array';
 import { User } from './models/user.model';
 import { friendStatusT, UserService } from './user.service';
 
@@ -27,7 +28,10 @@ class PaginationArgs {
 
 @Resolver(of => User)
 export class UserResolver {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly array: ArrayUtil,
+  ) {}
 
   @ResolveField(type => [User]) //FR
   async friends(
@@ -43,8 +47,18 @@ export class UserResolver {
   }
 
   @ResolveField(type => [User]) //FR
-  overlappedFriends(): User[] {
-    return;
+  async overlappedFriends(
+    @Context() ctx: Express.Context,
+    @Root() root: User,
+  ): Promise<User[]> {
+    const myFriends = await this.userService.getFriends(ctx.req.user.id);
+    const targetFriends = await this.userService.getFriends(root.id);
+    const { inter } = this.array.getArraySet(
+      myFriends,
+      targetFriends,
+      'twitterId',
+    );
+    return inter;
   }
   //구현해야함
 

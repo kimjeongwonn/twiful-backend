@@ -43,7 +43,7 @@ export class UserService {
       twitterId?: string;
       twitterToken?: string;
     } = {};
-    if (arguments.length === 0)
+    if (!(id || username || twitterId || twitterToken))
       throw new Error('최소한 한가지 인자가 필요합니다.');
     if (id) setFindOne.id = id;
     if (username) setFindOne.username = username;

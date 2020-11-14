@@ -34,7 +34,7 @@ export class TwitterService {
 
   //모든 팔로워ID 가져오기 재귀함수
   private async getFullFollowers(user: User, corsur?: string) {
-    const tempList = (await this.getFollower(user)) as followersList;
+    const tempList = (await this.getFollower(user, corsur)) as followersList;
     if (tempList.next_cursor)
       tempList.ids.push(
         ...(await this.getFullFollowers(user, tempList.next_cursor_str)),
@@ -57,7 +57,7 @@ export class TwitterService {
 
   //모든 팔로잉ID 가져오기 재귀함수
   private async getFullFollowings(user: User, corsur?: string) {
-    const tempList = (await this.getFollowing(user)) as followersList;
+    const tempList = (await this.getFollowing(user, corsur)) as followersList;
     if (tempList.next_cursor)
       tempList.ids.push(
         ...(await this.getFullFollowings(user, tempList.next_cursor_str)),
@@ -92,7 +92,6 @@ export class TwitterService {
       followers.length > followings.length ? followers : followings;
 
     const { inter } = this.array.getArraySet(shorten, longest);
-    //arrayset 함수 검증필요
     const result: TwitterUserDto[] = [];
     do {
       const splitArray = inter.splice(0, 100);

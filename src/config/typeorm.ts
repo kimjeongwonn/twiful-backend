@@ -1,5 +1,4 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-require('dotenv').config();
 
 const typeormConfig: TypeOrmModuleOptions = {
   type: 'mariadb',
