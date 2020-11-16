@@ -1,3 +1,4 @@
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import {
   Column,
   CreateDateColumn,
@@ -10,6 +11,7 @@ import { User } from './user.model';
 @Entity()
 export class FriendRelation {
   @PrimaryGeneratedColumn()
+  @Field(type => ID)
   id: number;
 
   @ManyToOne(
@@ -32,6 +34,9 @@ export class FriendRelation {
   @Column()
   friendReciverId: number;
 
+  @Column({ nullable: true })
+  message?: string;
+
   @Column({ default: false })
   concluded: boolean;
 
@@ -40,4 +45,13 @@ export class FriendRelation {
 
   @Column({ type: 'timestamp', nullable: true })
   concludedAt?: Date;
+}
+
+@ObjectType()
+export class FriendStatus {
+  @Field({ nullable: true })
+  message?: string;
+
+  @Field()
+  status: string;
 }

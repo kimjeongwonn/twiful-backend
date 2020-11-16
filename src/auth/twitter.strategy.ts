@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy as Twitter } from 'passport-twitter';
-import { User } from 'src/user/models/user.model';
+import { User } from '../user/models/user.model';
 import { AuthService } from './auth.service';
 
 export interface includedUserData extends Partial<User> {
@@ -12,10 +12,10 @@ export interface includedUserData extends Partial<User> {
 export class TwitterStrategy extends PassportStrategy(Twitter) {
   constructor(private readonly authService: AuthService) {
     super({
+      forceLogin: true,
       consumerKey: process.env.TWITTER_API_KEY,
       consumerSecret: process.env.TWITTER_API_SECRET,
       callbackURL: process.env.TWITTER_API_CALLBACK,
-      forceLogin: true,
     });
   }
 
@@ -29,11 +29,14 @@ export class TwitterStrategy extends PassportStrategy(Twitter) {
       //S3에 저장한 뒤 링크 생성할 것
     };
     let signedUser: User;
+    let login: boolean = false;
     const existProfileUser = await this.authService.validateProfile(
       twitterUser.twitterToken,
     );
     if (existProfileUser) {
       console.log('이미 프로파일 존재');
+      existProfileUser;
+      login = true;
       signedUser = existProfileUser;
       //이미 사용자 존재
     } else {
@@ -54,6 +57,6 @@ export class TwitterStrategy extends PassportStrategy(Twitter) {
       }
     }
     if (!signedUser) throw new UnauthorizedException();
-    return signedUser;
+    return { ...signedUser, login };
   }
 }

@@ -1,5 +1,5 @@
-import { Module, NestModule } from '@nestjs/common';
-import { UtilModule } from 'src/util/util.module';
+import { Module } from '@nestjs/common';
+import { UtilModule } from '../util/util.module';
 import { TwitterService } from './twitter.service';
 
 @Module({

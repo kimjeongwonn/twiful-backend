@@ -4,9 +4,9 @@ import { UserResolver } from './user.resolver';
 import { User } from './models/user.model';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FriendRelation } from './models/friendRelation.model';
-import { TwitterModule } from 'src/twitter/twitter.module';
-import { AuthModule } from 'src/auth/auth.module';
-import { UtilModule } from 'src/util/util.module';
+import { TwitterModule } from '../twitter/twitter.module';
+import { AuthModule } from '../auth/auth.module';
+import { UtilModule } from '../util/util.module';
 
 @Module({
   imports: [

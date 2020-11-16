@@ -8,12 +8,15 @@ import { User as UserModel } from './user/models/user.model';
 
 declare global {
   namespace Express {
-    interface User extends UserModel {}
+    interface User extends UserModel {
+      login: boolean;
+    }
     interface Context {
       req: Express.Request;
     }
     interface Session {
       token: string;
+      loginRedirect: string;
     }
   }
 }

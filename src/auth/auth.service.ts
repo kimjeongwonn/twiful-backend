@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/models/user.model';
 import { Connection, Repository } from 'typeorm';
-import { Profile } from 'src/profile/models/profile.model';
+import { Profile } from '../profile/models/profile.model';
 import { includedUserData } from './twitter.strategy';
 import { JwtService } from '@nestjs/jwt';
 const AES = require('crypto-js/aes');

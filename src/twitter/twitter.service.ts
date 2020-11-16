@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { User } from 'src/user/models/user.model';
-import { ArrayUtil } from 'src/util/util.array';
+import { User } from '../user/models/user.model';
+import { ArrayUtil } from '../util/util.array';
 import * as Twitter from 'twitter';
 import { followersList, TwitterUserDto } from './twitter.interface';
 

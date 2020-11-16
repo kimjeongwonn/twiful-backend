@@ -1,6 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
-import { Review } from 'src/review/models/review.model';
+import { Review } from '../../review/models/review.model';
 import {
   Column,
   CreateDateColumn,
@@ -31,7 +31,6 @@ export class Profile {
     { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   @JoinColumn()
-  @Field(type => User)
   user: User;
 
   @IsEmail()

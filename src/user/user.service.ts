@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AuthService } from 'src/auth/auth.service';
-import { TwitterService } from 'src/twitter/twitter.service';
-import { ArrayUtil } from 'src/util/util.array';
 import { FindManyOptions, Repository } from 'typeorm';
-import { FriendRelation } from './models/friendRelation.model';
+import { AuthService } from '../auth/auth.service';
+import { TwitterService } from '../twitter/twitter.service';
+import { ArrayUtil } from '../util/util.array';
+import { FriendRelation, FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
 
 export type friendStatusT =
@@ -52,28 +52,54 @@ export class UserService {
     return this.userRepository.findOne(setFindOne);
   }
 
+  async getUserToProfile(id) {
+    //연결된 프로필 가져오기
+    const currentUser = await this.userRepository.findOne(id, {
+      select: ['id'],
+      relations: ['profile'],
+    });
+    return currentUser.profile;
+  }
+
   //친구상태 확인
-  async friendStatus(id: number, targetId: number): Promise<friendStatusT> {
-    if (id === targetId) return 'self';
+  async friendStatus(id: number, targetId: number): Promise<FriendStatus> {
+    if (id === targetId) return { status: 'self' };
     const result = await this.friendRelationRepository.findOne({
       where: [
         { friendReciverId: id, friendRequesterId: targetId },
         { friendReciverId: targetId, friendRequesterId: id },
       ],
     });
-    if (!result) return 'not';
-    if (result.concluded) return 'friended';
-    else if (result.friendRequesterId === id) return 'requested';
-    else return 'recived';
+    if (!result) return { status: 'not' };
+    if (result.concluded) return { status: 'friended' };
+    else if (result.friendRequesterId === id)
+      return { status: 'requested', message: result.message };
+    else return { status: 'recived', message: result.message };
   }
 
   //친구목록 불러오기
-  async getFriends(id: number, take?: number, page?: number): Promise<User[]> {
+  async getFriends(
+    user: User,
+    targetId: number,
+    take?: number,
+    page?: number,
+  ): Promise<User[]> {
+    if (user.id !== targetId) {
+      //자기 자신을 확인하는 경우에는 검증없이 진행
+      const { publicFriends } = await this.userRepository.findOne(targetId, {
+        //대상의 친구공개여부 확인
+        select: ['id', 'publicFriends'],
+      });
+      const isFriend = await this.friendStatus(user.id, targetId); //대상과 친구인지 확인
+      if (!(publicFriends || isFriend.status === 'friended'))
+        //둘 중 하나라도 아니라면
+        throw new UnauthorizedException(); //권한 없음
+    }
     const findOptions: FindManyOptions<FriendRelation> = {
       select: ['id', 'friendReciverId', 'friendRequesterId'],
       where: [
-        { friendRequesterId: id, concluded: true },
-        { friendReciverId: id, concluded: true },
+        { friendRequesterId: targetId, concluded: true },
+        { friendReciverId: targetId, concluded: true },
       ],
       relations: ['friendReciver', 'friendRequester'],
     };
@@ -83,8 +109,8 @@ export class UserService {
     }
     const friendsResult = await this.friendRelationRepository.find(findOptions);
     return friendsResult.map(friend => {
-      if (friend.friendReciverId === id) return friend.friendRequester;
-      if (friend.friendRequesterId === id) return friend.friendReciver;
+      if (friend.friendReciverId === targetId) return friend.friendRequester;
+      if (friend.friendRequesterId === targetId) return friend.friendReciver;
     });
   }
 
@@ -147,26 +173,49 @@ export class UserService {
   //TWITTER API 사용하는 Services
 
   //친구삭제
-  async deleteFriend(user: User, targetId: number) {
-    const relation = await this.friendRelationRepository.findOne({
-      where: [
-        { friendRequesterId: user.id, friendReciverId: targetId },
-        { friendRequesterId: targetId, friendReciverId: user.id },
-      ],
-    });
-    this.friendRelationRepository.remove(relation);
+  async deleteFriend(user: User, targetUser: User, both?: boolean) {
+    try {
+      const relation = await this.friendRelationRepository.findOne({
+        where: [
+          { friendRequesterId: user.id, friendReciverId: targetUser.id },
+          { friendRequesterId: targetUser.id, friendReciverId: user.id },
+        ],
+      });
+      if (both) {
+        //만약 양쪽에서 해제해야 한다면
+        const targetAuthedUser = await this.authService.getUserData(
+          targetUser.id,
+          //상대방 인증정보를 받아와서
+        );
+        if (targetAuthedUser.twitterToken) {
+          //트위터 계정이 연결되어 있다면 언팔로우
+          await this.twitterService.unfollowUser(
+            targetAuthedUser,
+            user.twitterId,
+          );
+        } else throw new Error('상대방이 트위풀에 계정이 없음');
+      }
+
+      //both옵션을 통해 상대방도 나를 언팔로우
+      await this.twitterService.unfollowUser(user, targetUser.twitterId);
+      return this.friendRelationRepository.remove(relation);
+    } catch (err) {
+      throw err;
+    }
   }
 
   //친구추가(친구요청/친구수락)
   async addFriend(
     user: User,
     targetId: number,
-    force: boolean = false,
+    message?: string,
+    force?: boolean,
   ): Promise<boolean> {
     //자기 자신은 친구요청 불가능
-    if (user.id === targetId) return false;
+    if (user.id === targetId)
+      throw new Error('자기 자신을 친구추가 할 수 없습니다.');
 
-    //이미 친구인 상태
+    //이미 친구인 상태 확인
     const existRelation = await this.friendRelationRepository.findOne({
       select: ['id'],
       where: [
@@ -182,9 +231,10 @@ export class UserService {
         },
       ],
     });
-    if (existRelation) return false;
+    //이미 친구라면 에러
+    if (existRelation) throw new Error('이미 친구입니다');
 
-    //이미 친구요청을 받은 상태
+    //이미 친구요청을 받은 상태 확인
     const existRecived = await this.friendRelationRepository.findOne({
       select: ['id'],
       where: {
@@ -239,11 +289,14 @@ export class UserService {
       forceRelation.concludedAt = new Date();
       await this.friendRelationRepository.save(forceRelation);
       return true;
+    } else if (existReqeusted) {
+      throw new Error('이미 친구 요청을 보냈습니다');
     }
     //최초 신청인경우 요청만 보내기
     const newRelation = await this.friendRelationRepository.create();
     newRelation.friendRequesterId = user.id;
     newRelation.friendReciverId = targetId;
+    newRelation.message = message;
     await this.friendRelationRepository.save(newRelation);
     return true;
   }
@@ -258,25 +311,19 @@ export class UserService {
       username: x.screen_name,
       id: null,
     }));
-    const currntFriendIds = (await this.getFriends(user.id)).map(x => ({
+    const currntFriendIds = (await this.getFriends(user, user.id)).map(x => ({
       twitterId: x.twitterId,
       username: x.username,
       id: x.id,
     }));
 
-    console.log('twitterFriendIds: ', twitterFriendIds);
-    console.log('twifulFriendIds: ', currntFriendIds);
-
     const {
-      diff: { a: willSyncFriends, b: willUnsyncFriends },
-    } = this.array.getArraySet(twitterFriendIds, currntFriendIds, 'twitterId');
-
-    console.log('twitterExist: ', willSyncFriends);
-    console.log('twitfulExist: ', willUnsyncFriends);
+      diff: { a: willUnsyncFriends, b: willSyncFriends },
+    } = this.array.getArraySet(currntFriendIds, twitterFriendIds, 'twitterId');
 
     //트위풀에서만 친구일경우 친구 삭제
     willUnsyncFriends.forEach(targetUser =>
-      this.deleteFriend(user, targetUser.id),
+      this.deleteFriend(user, targetUser),
     );
 
     //친구 추가하기
@@ -291,10 +338,10 @@ export class UserService {
           newUser.twitterId = targetUser.twitterId;
           newUser.username = targetUser.username;
           const savedUser = await this.userRepository.save(newUser);
-          await this.addFriend(user, savedUser.id, true);
+          await this.addFriend(user, savedUser.id, null, true);
         } else {
           // 동기화된 사용자가 존재한다면, 친구로 설정
-          await this.addFriend(user, existsUser.id, true);
+          await this.addFriend(user, existsUser.id, null, true);
         }
       });
     } catch (err) {

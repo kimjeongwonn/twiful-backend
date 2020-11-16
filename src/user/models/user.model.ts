@@ -1,5 +1,5 @@
 import { Field, ID, Int, ObjectType, Parent } from '@nestjs/graphql';
-import { Profile } from 'src/profile/models/profile.model';
+import { Profile } from '../../profile/models/profile.model';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -37,7 +37,6 @@ export class User {
     type => Profile,
     profile => profile.user,
   )
-  @Field(type => Profile, { nullable: true })
   profile?: Profile;
 
   @OneToMany(
@@ -51,6 +50,10 @@ export class User {
     friendRelation => friendRelation.friendRequester,
   )
   friendRequests: FriendRelation[];
+
+  @Column({ default: true })
+  @Field(type => Boolean)
+  publicFriends: boolean;
 
   @ManyToMany(
     type => User,
