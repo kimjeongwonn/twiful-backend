@@ -1,6 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
-import { Review } from '../../review/models/review.model';
 import {
   Column,
   CreateDateColumn,
@@ -13,9 +12,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Recruit } from '../../recruit/models/recruit.model';
+import { Review } from '../../review/models/review.model';
 import { Taste } from '../../taste/models/taste.model';
 import { User } from '../../user/models/user.model';
-import { ProfileService } from '../profile.service';
 import { Link } from './link.model';
 
 @Entity()

@@ -20,5 +20,9 @@ export class Link {
   @IsUrl()
   @Column()
   @Field()
-  linkUrl: string;
+  url: string;
+
+  @Column()
+  @Field()
+  type: string;
 }
