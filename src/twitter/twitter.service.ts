@@ -32,7 +32,15 @@ export class TwitterService {
     }
   }
 
-  //모든 팔로워ID 가져오기 재귀함수
+  //TwitterID 가져오기
+  private async getUserName(twitterId: string): Promise<string> {
+    const account = (await this._client.get('users/show', {
+      user_id: twitterId,
+    })) as TwitterUserDto;
+    return account.screen_name;
+  }
+
+  //모든 팔로워ID 가져오기 재귀함수 **테스트 필요**
   private async getFullFollowers(user: User, corsur?: string) {
     const tempList = (await this.getFollower(user, corsur)) as followersList;
     if (tempList.next_cursor)
@@ -55,7 +63,7 @@ export class TwitterService {
     }
   }
 
-  //모든 팔로잉ID 가져오기 재귀함수
+  //모든 팔로잉ID 가져오기 재귀함수 **테스트 필요**
   private async getFullFollowings(user: User, corsur?: string) {
     const tempList = (await this.getFollowing(user, corsur)) as followersList;
     if (tempList.next_cursor)
@@ -64,6 +72,8 @@ export class TwitterService {
       );
     return tempList.ids;
   }
+
+  //실제 실행로직
 
   //유저 팔로우하기
   async followUser(user: User, targetUserTwitterId: string) {
@@ -81,7 +91,7 @@ export class TwitterService {
     });
   }
 
-  //맞팔유저 가져오기
+  //맞팔유저 가져오기 **테스트 필요**
   async getTwitterFriends(user: User) {
     this.setTwitter(user);
     const followers = await this.getFullFollowers(user);
@@ -93,14 +103,21 @@ export class TwitterService {
 
     const { inter } = this.array.getArraySet(shorten, longest);
     const result: TwitterUserDto[] = [];
+
     do {
       const splitArray = inter.splice(0, 100);
-      const splitResult = ((await this._client.get('/users/lookup', {
+      const splitResult = (await this._client.get('/users/lookup', {
         user_id: splitArray.join(','),
-      })) as unknown) as TwitterUserDto[];
+      })) as TwitterUserDto[];
       result.push(...splitResult);
     } while (inter.length >= 100);
-    //100명 이상이면 분할하여 GET요청
+    //100명 이상이면 분할하여 GET요청 **테스트 필요**
+
     return result;
+  }
+
+  async getTwitterUrl(user: User, targetTwitterId: string) {
+    this.setTwitter(user);
+    return `https://twitter.com/${await this.getUserName(targetTwitterId)}`;
   }
 }

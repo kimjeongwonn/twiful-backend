@@ -56,6 +56,40 @@ export class UserResolver {
     return this.userService.countFriends(root.id);
   }
 
+  @ResolveField(returns => [User], { nullable: true })
+  async requestedFriends(
+    @Root() root: User,
+    @Context() ctx: Express.Context,
+  ): Promise<User[]> {
+    if (root.id !== ctx.req.user.id) return;
+    return this.userService.getRequestedFriends(ctx.req.user.id);
+  }
+  @ResolveField(returns => Int, { nullable: true })
+  async requestedFriendsCount(
+    @Root() root: User,
+    @Context() ctx: Express.Context,
+  ): Promise<number> {
+    if (root.id !== ctx.req.user.id) return;
+    return this.userService.countRequestedFriends(ctx.req.user.id);
+  }
+
+  @ResolveField(returns => [User], { nullable: true })
+  async recivedFriends(
+    @Root() root: User,
+    @Context() ctx: Express.Context,
+  ): Promise<User[]> {
+    if (root.id !== ctx.req.user.id) return;
+    return this.userService.getRecivedFriends(ctx.req.user.id);
+  }
+  @ResolveField(returns => Int, { nullable: true })
+  async recivedFriendsCount(
+    @Root() root: User,
+    @Context() ctx: Express.Context,
+  ): Promise<number> {
+    if (root.id !== ctx.req.user.id) return;
+    return this.userService.countRecivedFriends(ctx.req.user.id);
+  }
+
   @ResolveField(type => [User])
   async overlappedFriends(
     //겹치는 친구 불러오기
@@ -101,39 +135,24 @@ export class UserResolver {
   }
 
   @UseGuards(GqlAuthGuard)
-  @Query(returns => User, { description: 'return my User account' })
+  @Query(returns => User)
   async lookMe(@Context() ctx: Express.Context): Promise<User> {
     return this.userService.findOne(ctx.req.user.id);
   }
 
   @UseGuards(GqlAuthGuard)
-  @Query(returns => [User], { description: 'return my User account' })
-  async requestedFriends(@Context() ctx: Express.Context): Promise<User[]> {
-    return this.userService.getRequestedFriends(ctx.req.user.id);
-  }
-  @UseGuards(GqlAuthGuard)
-  @Query(returns => Int, { description: 'return my User account' })
-  async requestedFriendsCount(
-    @Context() ctx: Express.Context,
-  ): Promise<number> {
-    return this.userService.countRequestedFriends(ctx.req.user.id);
-  }
-
-  @UseGuards(GqlAuthGuard)
-  @Query(returns => [User], { description: 'return my User account' })
-  async recivedFriends(@Context() ctx: Express.Context): Promise<User[]> {
-    return this.userService.getRecivedFriends(ctx.req.user.id);
-  }
-  @UseGuards(GqlAuthGuard)
-  @Query(returns => Int, { description: 'return my User account' })
-  async recivedFriendsCount(@Context() ctx: Express.Context): Promise<number> {
-    return this.userService.countRecivedFriends(ctx.req.user.id);
-  }
-
-  @UseGuards(GqlAuthGuard)
   @Query(returns => User)
-  async lookUser(@Args('id', { type: () => ID }) id: number) {
+  async lookUser(@Args('id', { type: () => Int }) id: number) {
     return this.userService.findOne(id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(returns => String)
+  async getTwitterUrl(
+    @Context() ctx: Express.Context,
+    @Args('id', { type: () => Int }) id: number,
+  ) {
+    return this.userService.getTwitterUrl(ctx.req.user, id);
   }
   //쿼리 목록 끝
 
@@ -152,6 +171,18 @@ export class UserResolver {
   @Mutation(returns => Boolean)
   async syncFriends(@Context() ctx: Express.Context) {
     return this.userService.syncFriends(ctx.req.user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(returns => Boolean)
+  async togglePublicTwitterUsername(@Context() ctx: Express.Context) {
+    return this.userService.togglePublicTwitterUsername(ctx.req.user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(returns => Boolean)
+  async togglePublicFriends(@Context() ctx: Express.Context) {
+    return this.userService.togglePublicFriends(ctx.req.user);
   }
   //뮤테이션 목록 끝
 }

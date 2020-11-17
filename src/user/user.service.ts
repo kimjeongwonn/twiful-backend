@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Profile } from '../profile/models/profile.model';
 import { FindManyOptions, Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -20,6 +21,7 @@ export class UserService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(FriendRelation)
     private friendRelationRepository: Repository<FriendRelation>,
+    @InjectRepository(Profile) private profileRepository: Repository<Profile>,
     private twitterService: TwitterService,
     private authService: AuthService,
     private array: ArrayUtil,
@@ -77,6 +79,19 @@ export class UserService {
     else return { status: 'recived', message: result.message };
   }
 
+  //친구목록 공개 토글
+  async togglePublicFriends(user: User) {
+    const current = (
+      await this.userRepository.findOne(user.id, {
+        select: ['publicFriends'],
+      })
+    ).publicFriends;
+    this.userRepository.update(user.id, {
+      publicFriends: !current,
+    });
+    return !current;
+  }
+
   //친구목록 불러오기
   async getFriends(
     user: User,
@@ -90,8 +105,8 @@ export class UserService {
         //대상의 친구공개여부 확인
         select: ['id', 'publicFriends'],
       });
-      const isFriend = await this.friendStatus(user.id, targetId); //대상과 친구인지 확인
-      if (!(publicFriends || isFriend.status === 'friended'))
+      const friendStatus = await this.friendStatus(user.id, targetId); //대상과 친구인지 확인
+      if (!(publicFriends || friendStatus.status === 'friended'))
         //둘 중 하나라도 아니라면
         throw new UnauthorizedException(); //권한 없음
     }
@@ -164,10 +179,52 @@ export class UserService {
   }
 
   //친구 요청수 세기
-  async countRecivedFriends(id: number): Promise<number> {
+  async countRecivedFriends(id?: number): Promise<number> {
     return this.friendRelationRepository.count({
       where: [{ friendReciverId: id, concluded: false }],
     });
+  }
+
+  //트위터 링크 받아오기
+  async getTwitterUrl(user: User, targetId: number) {
+    const targetUser = await this.userRepository.findOne(targetId, {
+      select: ['id', 'twitterId', 'publicTwitterUsername'],
+    });
+    if (!targetUser) throw new Error('존재하지 않는 사용자');
+    if (user.id === targetId) {
+      //자신의 URL 가져오기(가능하면 지양)
+      return this.twitterService.getTwitterUrl(user, user.twitterId);
+    }
+    let targetProfile: Profile;
+    try {
+      targetProfile = await this.profileRepository.findOne({
+        where: { user: targetUser },
+        select: ['id'],
+        relations: ['recruit'],
+      });
+    } catch {}
+    const friendStatus = await this.friendStatus(user.id, targetId);
+    if (
+      !(
+        targetUser.publicTwitterUsername ||
+        targetProfile?.recruit ||
+        (await friendStatus.status) === 'friended'
+      )
+    )
+      throw new UnauthorizedException(); //권한 없음
+    return this.twitterService.getTwitterUrl(user, targetUser.twitterId);
+  }
+
+  async togglePublicTwitterUsername(user: User) {
+    const current = (
+      await this.userRepository.findOne(user.id, {
+        select: ['publicTwitterUsername'],
+      })
+    ).publicTwitterUsername;
+    this.userRepository.update(user.id, {
+      publicTwitterUsername: !current,
+    });
+    return !current;
   }
 
   //TWITTER API 사용하는 Services

@@ -80,7 +80,7 @@ export class Profile {
 
   @OneToOne(
     type => Recruit,
-    recruit => recruit.published,
+    recruit => recruit.host,
   )
   @Field(type => Recruit)
   recruit: Recruit;

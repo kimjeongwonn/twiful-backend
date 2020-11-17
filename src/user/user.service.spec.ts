@@ -37,14 +37,11 @@ describe('사용자 테스트', () => {
     userRepositroy = module.get(getRepositoryToken(User));
   });
 
-  describe('찾기', () => {
-    let user: User;
-    beforeEach(() => {
-      user = new User();
-    });
-    it('모든 유저 불러오기', async () => {
-      const allUsers = await userService.findAll();
-      expect(allUsers).toBeInstanceOf(Array);
+  describe('시험기능', () => {
+    const user = new User();
+    user.id = 16;
+    it('트위터 링크받기', async () => {
+      userService.getTwitterUrl(user, 1);
     });
   });
 });

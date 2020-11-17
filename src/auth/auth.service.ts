@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   //유저데이터 가져오기 (복호화)
-  async getUserData(userId) {
+  async getUserData(userId: number): Promise<User> {
     const user = await this.userRepository.findOne(userId, {
       relations: ['profile'],
     });

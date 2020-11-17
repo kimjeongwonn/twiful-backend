@@ -7,13 +7,14 @@ import { FriendRelation } from './models/friendRelation.model';
 import { TwitterModule } from '../twitter/twitter.module';
 import { AuthModule } from '../auth/auth.module';
 import { UtilModule } from '../util/util.module';
+import { Profile } from '../profile/models/profile.model';
 
 @Module({
   imports: [
     UtilModule,
     AuthModule,
     TwitterModule,
-    TypeOrmModule.forFeature([User, FriendRelation]),
+    TypeOrmModule.forFeature([User, Profile, FriendRelation]),
   ],
   providers: [UserService, UserResolver],
   exports: [UserService],

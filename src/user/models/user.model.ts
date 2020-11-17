@@ -23,6 +23,9 @@ export class User {
   @Field()
   username: string;
 
+  @Column({ default: false })
+  publicTwitterUsername: boolean;
+
   @Column({ unique: true })
   @Field()
   twitterId: string;
