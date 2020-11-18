@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RecruitService } from 'src/recruit/recruit.service';
 import { User } from 'src/user/models/user.model';
-import { UserService } from 'src/user/user.service';
-import { Repository } from 'typeorm';
+import { FindConditions, FindOneOptions, Repository } from 'typeorm';
 import { Link } from './models/link.model';
 import { Profile } from './models/profile.model';
 
@@ -11,43 +11,53 @@ export class ProfileService {
   constructor(
     @InjectRepository(Profile) private profileRepository: Repository<Profile>,
     @InjectRepository(Link) private linkRepository: Repository<Link>,
-    private userService: UserService,
+    private recruitService: RecruitService,
   ) {}
-  async findOneProfile(user: User) {
-    return this.profileRepository.findOne(user);
+
+  async findOne(
+    conditions?: FindConditions<Profile>,
+    options?: FindOneOptions<Profile>,
+  ) {
+    return this.profileRepository.findOne(conditions, options);
   }
 
   async getProfileToUser(id) {
-    const currentProfile = await this.profileRepository.findOne(id, {
+    const currentProfile = await this.findOne(id, {
       select: ['id'],
       relations: ['user'],
     });
     return currentProfile.user;
   }
 
-  async editProfile(user: User, bio: string = '') {
-    const profile = await this.findOneProfile(user);
-    const result = await this.profileRepository.update(profile.id, { bio });
-    if (result.affected) return bio;
+  async editProfile(user: User, input: { bio: string }) {
+    const result = await this.profileRepository.update(user.profile, input);
+    if (result.affected) return input.bio;
     else return;
   }
 
-  async addLink(user: User, url: string, type: string) {
-    const profile = await this.findOneProfile(user);
+  async addLink(user: User, input: { url: string; type: string }) {
     const newLink = this.linkRepository.create({
-      host: profile,
-      url,
-      type,
+      host: user.profile,
+      ...input,
     });
     return this.linkRepository.save(newLink);
   }
-  async editLink(user: User, url?: string, type?: string) {
-    if (!(url || type)) throw new Error('최소한 하나는 수정해야 합니다');
-    const update: Partial<Link> = {};
-    if (url) update.url = url;
-    if (type) update.type = type;
-    const profile = await this.findOneProfile(user);
-    const result = await this.linkRepository.update({ host: profile }, update);
+  async editLink(user: User, input: { url?: string; type?: string }) {
+    if (Object.keys(input).length === 0)
+      throw new Error('최소한 하나는 수정해야 합니다');
+    const result = await this.linkRepository.update(
+      { host: user.profile },
+      input,
+    );
     return !!result.affected;
+  }
+  async deleteLink(user: User, id: number) {
+    const willDeleteLink = await this.linkRepository.findOne({
+      host: user,
+      id,
+    });
+    if (!willDeleteLink)
+      throw new Error('내가 소유한 해당 링크객체를 찾을 수 없습니다.');
+    return !!(await this.linkRepository.remove(willDeleteLink));
   }
 }

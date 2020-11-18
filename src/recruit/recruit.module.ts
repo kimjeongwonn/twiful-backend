@@ -7,5 +7,6 @@ import { RecruitService } from './recruit.service';
 @Module({
   imports: [TypeOrmModule.forFeature([Recruit])],
   providers: [RecruitService, RecruitResolver],
+  exports: [RecruitService],
 })
 export class RecruitModule {}

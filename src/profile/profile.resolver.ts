@@ -12,7 +12,7 @@ import { Link } from './models/link.model';
 import { Profile } from './models/profile.model';
 import { ProfileService } from './profile.service';
 
-@Resolver(() => Profile)
+@Resolver(of => Profile)
 export class ProfileResolver {
   constructor(private readonly profileService: ProfileService) {}
 
@@ -23,7 +23,7 @@ export class ProfileResolver {
 
   @Mutation(type => String, { nullable: true })
   async editProfile(@Args('bio') bio: string, @Context() ctx: Express.Context) {
-    return this.profileService.editProfile(ctx.req.user, bio);
+    return this.profileService.editProfile(ctx.req.user, { bio });
   }
   @Mutation(type => Link)
   async addLink(
@@ -31,7 +31,7 @@ export class ProfileResolver {
     @Args('type') type: string,
     @Context() ctx: Express.Context,
   ) {
-    return this.profileService.addLink(ctx.req.user, url, type);
+    return this.profileService.addLink(ctx.req.user, { url, type });
   }
   @Mutation(type => Boolean)
   async editLink(
@@ -39,6 +39,6 @@ export class ProfileResolver {
     @Args('url', { nullable: true }) url?: string,
     @Args('type', { nullable: true }) type?: string,
   ) {
-    return this.profileService.editLink(ctx.req.user, url, type);
+    return this.profileService.editLink(ctx.req.user, { url, type });
   }
 }

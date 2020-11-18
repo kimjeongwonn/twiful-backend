@@ -74,5 +74,6 @@ export class User {
   beBlocked: User[];
 
   @CreateDateColumn({ type: 'timestamp' })
+  @Field(type => Date)
   createAt: Date;
 }

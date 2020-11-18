@@ -12,7 +12,5 @@ export class TasteResolver {
   }
 
   @Query(returns => Taste)
-  async lookAllTaste() {
-    return this.tasteService.findAll();
-  }
+  async lookAllTaste() {}
 }

@@ -17,7 +17,7 @@ import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ArrayUtil } from '../util/util.array';
 import { FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
-import { friendStatusT, UserService } from './user.service';
+import { UserService } from './user.service';
 
 @ArgsType()
 class PaginationArgs {
@@ -137,13 +137,13 @@ export class UserResolver {
   @UseGuards(GqlAuthGuard)
   @Query(returns => User)
   async lookMe(@Context() ctx: Express.Context): Promise<User> {
-    return this.userService.findOne(ctx.req.user.id);
+    return this.userService.findOne({ id: ctx.req.user.id });
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(returns => User)
   async lookUser(@Args('id', { type: () => Int }) id: number) {
-    return this.userService.findOne(id);
+    return this.userService.findOne({ id });
   }
 
   @UseGuards(GqlAuthGuard)
@@ -153,6 +153,13 @@ export class UserResolver {
     @Args('id', { type: () => Int }) id: number,
   ) {
     return this.userService.getTwitterUrl(ctx.req.user, id);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(returns => String)
+  async test(@Context() ctx: Express.Context) {
+    console.log(ctx.req.user.createAt);
+    console.log(new Date());
   }
   //쿼리 목록 끝
 

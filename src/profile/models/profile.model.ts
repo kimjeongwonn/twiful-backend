@@ -48,7 +48,7 @@ export class Profile {
   @ManyToMany(
     type => Taste,
     taste => taste.likers,
-    { cascade: true },
+    { cascade: true, onDelete: 'CASCADE' },
   )
   @JoinTable()
   @Field(type => [Taste])
@@ -57,7 +57,7 @@ export class Profile {
   @ManyToMany(
     type => Taste,
     taste => taste.dislikers,
-    { cascade: true },
+    { cascade: true, onDelete: 'CASCADE' },
   )
   @JoinTable()
   @Field(type => [Taste])

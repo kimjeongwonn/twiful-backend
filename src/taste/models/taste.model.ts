@@ -1,6 +1,5 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { Profile } from '../../profile/models/profile.model';
-import { Category } from './category.model';
 import { Review } from '../../review/models/review.model';
 import {
   Column,
@@ -19,15 +18,7 @@ export class Taste {
   @Field(type => ID)
   id: number;
 
-  @ManyToOne(
-    type => Category,
-    category => category.tastes,
-    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
-  )
-  @Field(type => Category)
-  category: Category;
-
-  @Column()
+  @Column({ unique: true })
   @Field()
   name: string;
 

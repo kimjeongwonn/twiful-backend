@@ -2,8 +2,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 const session = require('express-session');
-import * as dotenv from 'dotenv';
-dotenv.config();
 import { User as UserModel } from './user/models/user.model';
 
 declare global {

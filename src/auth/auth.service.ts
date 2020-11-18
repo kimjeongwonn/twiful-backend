@@ -18,11 +18,14 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  //유저데이터 가져오기 (토큰제외)
+  async getUser(userId: number) {
+    return this.userRepository.findOne(userId, { relations: ['profile'] });
+  }
+
   //유저데이터 가져오기 (복호화)
   async getUserData(userId: number): Promise<User> {
-    const user = await this.userRepository.findOne(userId, {
-      relations: ['profile'],
-    });
+    const user = await this.userRepository.findOne(userId);
     return {
       ...user,
       twitterSecret: AES.decrypt(user.twitterSecret, this.AES_KEY).toString(

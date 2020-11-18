@@ -1,19 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Profile } from '../profile/models/profile.model';
-import { FindManyOptions, Repository } from 'typeorm';
+import {
+  FindConditions,
+  FindManyOptions,
+  FindOneOptions,
+  Repository,
+} from 'typeorm';
 import { AuthService } from '../auth/auth.service';
+import { Profile } from '../profile/models/profile.model';
+import { ProfileService } from '../profile/profile.service';
 import { TwitterService } from '../twitter/twitter.service';
 import { ArrayUtil } from '../util/util.array';
 import { FriendRelation, FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
-
-export type friendStatusT =
-  | 'friended'
-  | 'not'
-  | 'requested'
-  | 'recived'
-  | 'self';
 
 @Injectable()
 export class UserService {
@@ -21,7 +20,7 @@ export class UserService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(FriendRelation)
     private friendRelationRepository: Repository<FriendRelation>,
-    @InjectRepository(Profile) private profileRepository: Repository<Profile>,
+    private profileService: ProfileService,
     private twitterService: TwitterService,
     private authService: AuthService,
     private array: ArrayUtil,
@@ -34,24 +33,10 @@ export class UserService {
 
   //사용자 찾기
   async findOne(
-    id?: number,
-    username?: string,
-    twitterId?: string,
-    twitterToken?: string,
+    conditions?: FindConditions<User>,
+    options?: FindOneOptions<User>,
   ): Promise<User> {
-    const setFindOne: {
-      id?: number;
-      username?: string;
-      twitterId?: string;
-      twitterToken?: string;
-    } = {};
-    if (!(id || username || twitterId || twitterToken))
-      throw new Error('최소한 한가지 인자가 필요합니다.');
-    if (id) setFindOne.id = id;
-    if (username) setFindOne.username = username;
-    if (twitterId) setFindOne.twitterId = twitterId;
-    if (twitterToken) setFindOne.twitterToken = twitterToken;
-    return this.userRepository.findOne(setFindOne);
+    return this.userRepository.findOne(conditions, options);
   }
 
   async getUserToProfile(id) {
@@ -185,19 +170,34 @@ export class UserService {
     });
   }
 
+  async togglePublicTwitterUsername(user: User) {
+    const current = (
+      await this.userRepository.findOne(user.id, {
+        select: ['publicTwitterUsername'],
+      })
+    ).publicTwitterUsername;
+    this.userRepository.update(user.id, {
+      publicTwitterUsername: !current,
+    });
+    return !current;
+  }
+
+  //TWITTER API 사용하는 Services
+
   //트위터 링크 받아오기
-  async getTwitterUrl(user: User, targetId: number) {
+  async getTwitterUrl(rawUser: User, targetId: number) {
     const targetUser = await this.userRepository.findOne(targetId, {
       select: ['id', 'twitterId', 'publicTwitterUsername'],
     });
     if (!targetUser) throw new Error('존재하지 않는 사용자');
+    const user = await this.authService.getUserData(rawUser.id); //트위터 토큰 가져오기
     if (user.id === targetId) {
       //자신의 URL 가져오기(가능하면 지양)
       return this.twitterService.getTwitterUrl(user, user.twitterId);
     }
     let targetProfile: Profile;
     try {
-      targetProfile = await this.profileRepository.findOne({
+      targetProfile = await this.profileService.findOne(null, {
         where: { user: targetUser },
         select: ['id'],
         relations: ['recruit'],
@@ -215,29 +215,16 @@ export class UserService {
     return this.twitterService.getTwitterUrl(user, targetUser.twitterId);
   }
 
-  async togglePublicTwitterUsername(user: User) {
-    const current = (
-      await this.userRepository.findOne(user.id, {
-        select: ['publicTwitterUsername'],
-      })
-    ).publicTwitterUsername;
-    this.userRepository.update(user.id, {
-      publicTwitterUsername: !current,
-    });
-    return !current;
-  }
-
-  //TWITTER API 사용하는 Services
-
   //친구삭제
-  async deleteFriend(user: User, targetUser: User, both?: boolean) {
+  async deleteFriend(rawUser: User, targetUser: User, both?: boolean) {
     try {
       const relation = await this.friendRelationRepository.findOne({
         where: [
-          { friendRequesterId: user.id, friendReciverId: targetUser.id },
-          { friendRequesterId: targetUser.id, friendReciverId: user.id },
+          { friendRequesterId: rawUser.id, friendReciverId: targetUser.id },
+          { friendRequesterId: targetUser.id, friendReciverId: rawUser.id },
         ],
       });
+      const user = await this.authService.getUserData(rawUser.id);
       if (both) {
         //만약 양쪽에서 해제해야 한다면
         const targetAuthedUser = await this.authService.getUserData(
@@ -263,13 +250,13 @@ export class UserService {
 
   //친구추가(친구요청/친구수락)
   async addFriend(
-    user: User,
+    rawUser: User,
     targetId: number,
     message?: string,
     force?: boolean,
   ): Promise<boolean> {
     //자기 자신은 친구요청 불가능
-    if (user.id === targetId)
+    if (rawUser.id === targetId)
       throw new Error('자기 자신을 친구추가 할 수 없습니다.');
 
     //이미 친구인 상태 확인
@@ -277,13 +264,13 @@ export class UserService {
       select: ['id'],
       where: [
         {
-          friendRequesterId: user.id,
+          friendRequesterId: rawUser.id,
           friendReciverId: targetId,
           concluded: true,
         },
         {
           friendRequesterId: targetId,
-          friendReciverId: user.id,
+          friendReciverId: rawUser.id,
           concluded: true,
         },
       ],
@@ -296,7 +283,7 @@ export class UserService {
       select: ['id'],
       where: {
         friendRequesterId: targetId,
-        friendReciverId: user.id,
+        friendReciverId: rawUser.id,
         concluded: false,
       },
     });
@@ -304,6 +291,7 @@ export class UserService {
       //내가 요청받은 상태이므로 친구승락
       try {
         //타겟 유저의 사용자 정보를 받아오기(토큰과 시크릿)
+        const user = await this.authService.getUserData(rawUser.id);
         const targetUser: User = await this.authService.getUserData(targetId);
         //서로 맞팔하기
         await this.twitterService.followUser(user, targetUser.twitterId);
@@ -323,12 +311,12 @@ export class UserService {
     const existReqeusted = await this.friendRelationRepository.findOne({
       select: ['id'],
       where: {
-        friendRequesterId: user.id,
+        friendRequesterId: rawUser.id,
         friendReciverId: targetId,
         concluded: false,
       },
     });
-    //강제실행일 경우 상대방 승인없이 친구관계 생성
+    //강제실행일 경우 상대방 승인없이 친구관계 생성 (트위터 API 연동 없음)
     if (force) {
       //요청을 보낸상태라면 존재하는 요청 승인
       if (existReqeusted) {
@@ -339,28 +327,31 @@ export class UserService {
         return true;
       }
       //최초의 경우 친구관계 생성
-      const forceRelation = await this.friendRelationRepository.create();
-      forceRelation.friendRequesterId = user.id;
-      forceRelation.friendReciverId = targetId;
-      forceRelation.concluded = true;
-      forceRelation.concludedAt = new Date();
+      const forceRelation = await this.friendRelationRepository.create({
+        friendRequesterId: rawUser.id,
+        friendReciverId: targetId,
+        concluded: true,
+        concludedAt: new Date(),
+      });
       await this.friendRelationRepository.save(forceRelation);
       return true;
     } else if (existReqeusted) {
       throw new Error('이미 친구 요청을 보냈습니다');
     }
     //최초 신청인경우 요청만 보내기
-    const newRelation = await this.friendRelationRepository.create();
-    newRelation.friendRequesterId = user.id;
-    newRelation.friendReciverId = targetId;
-    newRelation.message = message;
+    const newRelation = await this.friendRelationRepository.create({
+      friendRequesterId: rawUser.id,
+      friendReciverId: targetId,
+      message: message,
+    });
     await this.friendRelationRepository.save(newRelation);
     return true;
   }
 
   //트위터 친구목록 동기화
-  async syncFriends(user: User) {
+  async syncFriends(rawUser: User) {
     //트위터 맞팔목록 가져온 뒤 User타입으로 노멀라이즈
+    const user = await this.authService.getUserData(rawUser.id);
     const twitterFriendIds = (
       await this.twitterService.getTwitterFriends(user)
     ).map(x => ({
@@ -391,9 +382,10 @@ export class UserService {
         });
         if (!existsUser) {
           // 동기화된 사용자가 존재하지 않는다면 새로운 비회원 계정 생성 후 친구로 설정
-          const newUser = this.userRepository.create();
-          newUser.twitterId = targetUser.twitterId;
-          newUser.username = targetUser.username;
+          const newUser = await this.userRepository.create({
+            twitterId: targetUser.twitterId,
+            username: targetUser.username,
+          });
           const savedUser = await this.userRepository.save(newUser);
           await this.addFriend(user, savedUser.id, null, true);
         } else {
