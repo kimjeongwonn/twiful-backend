@@ -5,6 +5,7 @@ import { Connection, Repository } from 'typeorm';
 import { Profile } from '../profile/models/profile.model';
 import { includedUserData } from './twitter.strategy';
 import { JwtService } from '@nestjs/jwt';
+import { Recruit } from '../recruit/models/recruit.model';
 const AES = require('crypto-js/aes');
 const ENC = require('crypto-js').enc;
 
@@ -14,6 +15,7 @@ export class AuthService {
 
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Profile) private profileRepository: Repository<Profile>,
     private connection: Connection,
     private jwtService: JwtService,
   ) {}
@@ -34,7 +36,15 @@ export class AuthService {
     };
   }
 
-  //존재하는 계정 확인 및 반납
+  //로그인 시간 추가
+  async loginDateAdd(profile) {
+    const result = await this.profileRepository.update(profile, {
+      lastLoginAt: new Date(),
+    });
+    return !!result.affected;
+  }
+
+  //존재하는 계정 확인 및 반환
   async validateUser(twitterId: string): Promise<User | null> {
     const currUser = await this.userRepository.findOne({
       where: { twitterId },
@@ -42,10 +52,11 @@ export class AuthService {
     return currUser;
   }
 
-  //존재하는 가입계정 확인 및 반납
+  //존재하는 프로필 확인 및 계정과 프로필 반환
   async validateProfile(twitterToken: string): Promise<User | null> {
     const currUser = await this.userRepository.findOne({
       where: { twitterToken },
+      relations: ['profile'],
     });
     return currUser;
   }
@@ -77,9 +88,12 @@ export class AuthService {
         twitterSecret: encryptedTwitterSecret,
       });
       const connectUser = await manager.findOne(User, userId);
-      const newProfile = await manager.create(Profile);
-      newProfile.user = connectUser;
-      newProfile.lastLoginAt = new Date();
+      const newRcruit = await manager.create(Recruit);
+      const newProfile = await manager.create(Profile, {
+        user: connectUser,
+        recruit: newRcruit,
+        lastLoginAt: new Date(),
+      });
       resultProfile = await manager.save(newProfile);
     });
     return resultProfile.user;
@@ -101,9 +115,12 @@ export class AuthService {
       newUser.username = username;
       newUser.twitterToken = twitterToken;
       newUser.twitterSecret = encryptedTwitterSecret;
-      const newProfile = await manager.create(Profile);
-      newProfile.user = newUser;
-      newProfile.lastLoginAt = new Date();
+      const newRcruit = await manager.create(Recruit);
+      const newProfile = await manager.create(Profile, {
+        user: newUser,
+        recruit: newRcruit,
+        lastLoginAt: new Date(),
+      });
       resultProfile = await manager.save(newProfile);
     });
     return resultProfile.user;

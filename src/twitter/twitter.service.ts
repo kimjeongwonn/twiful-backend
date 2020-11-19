@@ -24,12 +24,8 @@ export class TwitterService {
     const param = cursor
       ? { user_id: user.twitterId, cursor, stringify_ids: true }
       : { user_id: user.twitterId, stringify_ids: true };
-    try {
-      const result = await this._client.get('/followers/ids', param);
-      return result;
-    } catch (err) {
-      throw err;
-    }
+    const result = await this._client.get('/followers/ids', param);
+    return result;
   }
 
   //TwitterID 가져오기
@@ -37,6 +33,7 @@ export class TwitterService {
     const account = (await this._client.get('users/show', {
       user_id: twitterId,
     })) as TwitterUserDto;
+    console.log(account);
     return account.screen_name;
   }
 
@@ -55,12 +52,8 @@ export class TwitterService {
     const param = cursor
       ? { user_id: user.twitterId, cursor, stringify_ids: true }
       : { user_id: user.twitterId, stringify_ids: true };
-    try {
-      const result = await this._client.get('/friends/ids', param);
-      return result;
-    } catch (err) {
-      throw err;
-    }
+    const result = await this._client.get('/friends/ids', param);
+    return result;
   }
 
   //모든 팔로잉ID 가져오기 재귀함수 **테스트 필요**
@@ -119,5 +112,23 @@ export class TwitterService {
   async getTwitterUrl(user: User, targetTwitterId: string) {
     this.setTwitter(user);
     return `https://twitter.com/${await this.getUserName(targetTwitterId)}`;
+  }
+
+  async relationCheck(
+    user: User,
+    targetTwitterId: string,
+  ): Promise<'blocked' | 'clear' | 'protected' | 'follwing'> {
+    this.setTwitter(user);
+    const account = (await this._client.get('users/show', {
+      user_id: targetTwitterId,
+    })) as TwitterUserDto;
+    console.log(account);
+    if (account.protected) {
+      if (account.status) return 'follwing';
+      else return 'protected';
+    } else {
+      if (account.status) return 'clear';
+      else return 'blocked';
+    }
   }
 }

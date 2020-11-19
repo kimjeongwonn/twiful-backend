@@ -80,6 +80,7 @@ export class Profile {
   @OneToOne(
     type => Recruit,
     recruit => recruit.host,
+    { cascade: true },
   )
   @Field(type => Recruit)
   recruit: Recruit;

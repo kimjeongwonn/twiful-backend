@@ -15,28 +15,24 @@ export class Recruit {
   @Field(type => ID)
   id: number;
 
-  @Column()
+  @Column({ default: false })
   @Field()
   published: boolean;
 
   @OneToOne(
     type => Profile,
     profile => profile.recruit,
-    { cascade: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
+    { onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
   @JoinColumn()
   @Field(type => Profile)
   host: Profile;
 
-  @Column()
-  @Field()
-  caption: string;
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  caption?: string;
 
-  @Column()
-  @Field()
-  fromDate: Date;
-
-  @Column()
+  @Column({ type: 'timestamp', nullable: true })
   @Field({ nullable: true })
   toDate?: Date;
 }

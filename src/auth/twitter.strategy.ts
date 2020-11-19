@@ -38,7 +38,8 @@ export class TwitterStrategy extends PassportStrategy(Twitter) {
       existProfileUser;
       login = true;
       signedUser = existProfileUser;
-      //이미 사용자 존재
+      this.authService.loginDateAdd(existProfileUser.profile); //로그인 기록
+      //이미 사용자 존재하므로 존재하는 사용자로 로그인
     } else {
       const existUser = await this.authService.validateUser(
         twitterUser.twitterId,

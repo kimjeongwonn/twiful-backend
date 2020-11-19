@@ -29,6 +29,10 @@ export class ProfileService {
     return currentProfile.user;
   }
 
+  async getProfileToRecruit(id) {
+    return this.recruitService.findOne({ host: { id } });
+  }
+
   async editProfile(user: User, input: { bio: string }) {
     const result = await this.profileRepository.update(user.profile, input);
     if (result.affected) return input.bio;

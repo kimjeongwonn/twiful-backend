@@ -36,11 +36,12 @@ export class UserResolver {
   ) {}
 
   //필드 리졸버 목록
-  @ResolveField(type => Profile)
+  @ResolveField(type => Profile, { nullable: true })
   async profile(@Root() root: User) {
     return this.userService.getUserToProfile(root.id);
   }
 
+  @ResolveField(type => [User])
   async friends(
     //친구목록 불러오기
     @Root() root: User,
@@ -96,17 +97,14 @@ export class UserResolver {
     @Context() ctx: Express.Context,
     @Root() root: User,
   ): Promise<User[]> {
-    let myFriends;
-    let targetFriends;
-    try {
-      myFriends = await this.userService.getFriends(
-        ctx.req.user,
-        ctx.req.user.id,
-      );
-      targetFriends = await this.userService.getFriends(ctx.req.user, root.id);
-    } catch (e) {
-      throw e;
-    }
+    const myFriends = await this.userService.getFriends(
+      ctx.req.user,
+      ctx.req.user.id,
+    );
+    const targetFriends = await this.userService.getFriends(
+      ctx.req.user,
+      root.id,
+    );
     const { inter } = this.array.getArraySet(
       myFriends,
       targetFriends,
@@ -157,9 +155,11 @@ export class UserResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(returns => String)
-  async test(@Context() ctx: Express.Context) {
-    console.log(ctx.req.user.createAt);
-    console.log(new Date());
+  async test(
+    @Context() ctx: Express.Context,
+    @Args('id', { type: () => Int }) id: number,
+  ) {
+    return this.userService.getTwitterUrl(ctx.req.user, id);
   }
   //쿼리 목록 끝
 

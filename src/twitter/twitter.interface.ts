@@ -17,12 +17,13 @@ export interface TwitterUserDto {
   entities?: any;
   description: string;
   protected: boolean;
-  vrified: boolean;
+  verified: boolean;
   followers_count: number;
   friends_count: number;
   listed_count: number;
   favourites_count: number;
   statuses_count: number;
+  status?: { [key: string]: any };
   created_at: string;
   profile_banner_url: string;
   profile_image_url_https: string;

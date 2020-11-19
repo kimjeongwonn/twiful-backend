@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProfileModule } from 'src/profile/profile.module';
+import { RecruitModule } from 'src/recruit/recruit.module';
 import { AuthModule } from '../auth/auth.module';
 import { TwitterModule } from '../twitter/twitter.module';
 import { UtilModule } from '../util/util.module';
@@ -12,6 +13,7 @@ import { UserService } from './user.service';
 @Module({
   imports: [
     AuthModule,
+    RecruitModule,
     ProfileModule,
     TwitterModule,
     UtilModule,
