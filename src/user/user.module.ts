@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProfileModule } from 'src/profile/profile.module';
 import { RecruitModule } from 'src/recruit/recruit.module';

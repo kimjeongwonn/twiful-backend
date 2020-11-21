@@ -5,6 +5,7 @@ import {
   FindConditions,
   FindManyOptions,
   FindOneOptions,
+  ObjectID,
   Repository,
 } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
@@ -33,20 +34,22 @@ export class UserService {
   }
 
   //사용자 찾기
-  async findOne(
+  findOne(
+    id?: string | number | Date | ObjectID,
+    options?: FindOneOptions<User>,
+  ): Promise<User | undefined>;
+  findOne(options?: FindOneOptions<User>): Promise<User | undefined>;
+  findOne(
     conditions?: FindConditions<User>,
     options?: FindOneOptions<User>,
-  ): Promise<User> {
-    return this.userRepository.findOne(conditions, options);
+  ): Promise<User | undefined>;
+  async findOne(...args): Promise<User> {
+    return this.userRepository.findOne(...args);
   }
 
   async getUserToProfile(id) {
     //연결된 프로필 가져오기
-    const currentUser = await this.userRepository.findOne(id, {
-      select: ['id'],
-      relations: ['profile'],
-    });
-    return currentUser.profile;
+    return this.profileService.findOne({ user: { id } });
   }
 
   //친구상태 확인
@@ -86,7 +89,7 @@ export class UserService {
     page?: number,
   ): Promise<User[]> {
     if (user.id !== targetId) {
-      //자기 자신을 확인하는 경우에는 검증없이 진행
+      //타인의 친구목록을 볼 때는 검증을 거침
       const { publicFriends, profile } = await this.userRepository.findOne(
         targetId,
         {
@@ -95,7 +98,6 @@ export class UserService {
           relations: ['profile'],
         },
       );
-      console.log(profile);
       const validRcruit = await this.recruitService.validRecruit(profile);
       const friendStatus = await this.friendStatus(user.id, targetId); //대상과 친구인지 확인
       if (!(friendStatus.status === 'friended' || validRcruit || publicFriends))
@@ -210,7 +212,9 @@ export class UserService {
       //자신의 URL 가져오기(가능하면 지양)
       return this.twitterService.getTwitterUrl(user, user.twitterId);
     }
-    const validRcruit = this.recruitService.validRecruit(rawUser.profile);
+    const validRcruit = this.recruitService.validRecruit(
+      await rawUser.getProfile(),
+    );
     const friendStatus = await this.friendStatus(user.id, targetId);
     if (
       !(
@@ -347,7 +351,7 @@ export class UserService {
       throw new Error('이미 친구 요청을 보냈습니다');
     }
     //최초 신청인경우 요청만 보내기
-    if (!(await this.recruitService.validRecruit(rawUser.profile)))
+    if (!(await this.recruitService.validRecruit(await rawUser.getProfile())))
       //내 트친소 검사
       throw new Error('트친소를 공개해야 친구요청을 할 수 있습니다.');
     const targetProfile = await this.profileService.findOne({

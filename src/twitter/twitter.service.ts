@@ -28,12 +28,11 @@ export class TwitterService {
     return result;
   }
 
-  //TwitterID 가져오기
+  //TwitterUserName 가져오기
   private async getUserName(twitterId: string): Promise<string> {
     const account = (await this._client.get('users/show', {
       user_id: twitterId,
     })) as TwitterUserDto;
-    console.log(account);
     return account.screen_name;
   }
 
@@ -122,7 +121,6 @@ export class TwitterService {
     const account = (await this._client.get('users/show', {
       user_id: targetTwitterId,
     })) as TwitterUserDto;
-    console.log(account);
     if (account.protected) {
       if (account.status) return 'follwing';
       else return 'protected';

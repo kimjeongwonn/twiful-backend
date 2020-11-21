@@ -1,3 +1,4 @@
+import { UseGuards } from '@nestjs/common';
 import {
   Args,
   Context,
@@ -9,6 +10,7 @@ import {
   InputType,
   Field,
 } from '@nestjs/graphql';
+import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Recruit } from '../recruit/models/recruit.model';
 import { RecruitService } from '../recruit/recruit.service';
 import { User } from '../user/models/user.model';
@@ -40,11 +42,23 @@ export class ProfileResolver {
 
   @ResolveField(type => User)
   async user(@Root() root: Profile) {
-    return this.profileService.getProfileToUser(root.id);
+    return this.profileService.getProfileToUser(root);
   }
   @ResolveField(type => Recruit)
   async recruit(@Root() root: Profile) {
-    return this.profileService.getProfileToRecruit(root.id);
+    return this.profileService.getProfileToRecruit(root);
+  }
+  @ResolveField(type => [Link])
+  async link(@Root() root: Profile) {
+    return this.profileService.getProfileToLink(root);
+  }
+  @ResolveField(type => [Link])
+  async likes(@Root() root: Profile) {
+    return this.profileService.getProfileToLikes(root);
+  }
+  @ResolveField(type => [Link])
+  async dislikes(@Root() root: Profile) {
+    return this.profileService.getProfileToDislikes(root);
   }
 
   @ResolveField(type => Boolean)
@@ -52,6 +66,7 @@ export class ProfileResolver {
     return this.recruitService.validRecruit(root);
   }
 
+  @UseGuards(GqlAuthGuard)
   @Mutation(type => String, { nullable: true })
   async editProfile(
     @Args('data') data: ProfileEditInput,
@@ -59,6 +74,8 @@ export class ProfileResolver {
   ) {
     return this.profileService.editProfile(ctx.req.user, data);
   }
+
+  @UseGuards(GqlAuthGuard)
   @Mutation(type => Link)
   async addLink(
     @Context() ctx: Express.Context,
@@ -66,6 +83,8 @@ export class ProfileResolver {
   ) {
     return this.profileService.addLink(ctx.req.user, data);
   }
+
+  @UseGuards(GqlAuthGuard)
   @Mutation(type => Boolean)
   async editLink(
     @Context() ctx: Express.Context,

@@ -22,7 +22,10 @@ export class AuthService {
 
   //유저데이터 가져오기 (토큰제외)
   async getUser(userId: number) {
-    return this.userRepository.findOne(userId, { relations: ['profile'] });
+    const user = await this.userRepository.findOne(userId);
+    const getProfile = async () =>
+      await this.profileRepository.findOne({ user: user });
+    return { ...user, getProfile };
   }
 
   //유저데이터 가져오기 (복호화)

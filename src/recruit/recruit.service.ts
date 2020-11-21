@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Profile } from '../profile/models/profile.model';
-import { FindConditions, FindOneOptions, Repository } from 'typeorm';
+import { FindConditions, FindOneOptions, ObjectID, Repository } from 'typeorm';
 import { Recruit } from './models/recruit.model';
 
 @Injectable()
@@ -18,11 +18,17 @@ export class RecruitService {
     return result.host;
   }
 
-  async findOne(
+  findOne(
+    id?: string | number | Date | ObjectID,
+    options?: FindOneOptions<Recruit>,
+  ): Promise<Recruit | undefined>;
+  findOne(options?: FindOneOptions<Recruit>): Promise<Recruit | undefined>;
+  findOne(
     conditions?: FindConditions<Recruit>,
     options?: FindOneOptions<Recruit>,
-  ) {
-    return this.recruitRepository.findOne(conditions, options);
+  ): Promise<Recruit | undefined>;
+  async findOne(...args) {
+    return this.recruitRepository.findOne(...args);
   }
 
   async validRecruit(profile: Profile) {

@@ -76,4 +76,6 @@ export class User {
   @CreateDateColumn({ type: 'timestamp' })
   @Field(type => Date)
   createAt: Date;
+
+  getProfile: () => Promise<Profile>;
 }

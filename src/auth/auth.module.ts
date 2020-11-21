@@ -1,15 +1,16 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import * as dotenv from 'dotenv';
 import { Profile } from '../profile/models/profile.model';
 import { TwitterModule } from '../twitter/twitter.module';
 import { User } from '../user/models/user.model';
+import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { TwitterStrategy } from './twitter.strategy';
-import * as dotenv from 'dotenv';
 dotenv.config();
 
 @Module({
