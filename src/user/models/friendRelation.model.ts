@@ -5,10 +5,12 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { User } from './user.model';
 
 @Entity()
+@Unique(['friendRequester', 'friendReceiver'])
 export class FriendRelation {
   @PrimaryGeneratedColumn()
   @Field(type => ID)
@@ -26,13 +28,13 @@ export class FriendRelation {
 
   @ManyToOne(
     type => User,
-    user => user.friendRecives,
+    user => user.friendReceives,
     { onDelete: 'CASCADE', onUpdate: 'CASCADE' },
   )
-  friendReciver: User;
+  friendReceiver: User;
 
   @Column()
-  friendReciverId: number;
+  friendReceiverId: number;
 
   @Column({ nullable: true })
   message?: string;

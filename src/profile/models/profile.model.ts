@@ -7,10 +7,12 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Notice } from '../../notice/models/notice.model';
 import { Recruit } from '../../recruit/models/recruit.model';
 import { Review } from '../../review/models/review.model';
 import { Taste } from '../../taste/models/taste.model';
@@ -71,6 +73,13 @@ export class Profile {
   reviews: Review[];
 
   @OneToMany(
+    type => Review,
+    review => review.toProfile,
+  )
+  @Field(type => [Review])
+  takenReviews: Review[];
+
+  @OneToMany(
     type => Link,
     link => link.host,
   )
@@ -84,6 +93,20 @@ export class Profile {
   )
   @Field(type => Recruit)
   recruit: Recruit;
+
+  @OneToMany(
+    type => Notice,
+    notice => notice.from,
+  )
+  @Field(type => [Notice])
+  sendedNotice: Notice[];
+
+  @OneToMany(
+    type => Notice,
+    notice => notice.to,
+  )
+  @Field(type => [Notice])
+  receivedNotice: Notice[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;

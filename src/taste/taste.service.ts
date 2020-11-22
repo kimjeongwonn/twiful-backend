@@ -1,16 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindConditions, FindOneOptions, ObjectID, Repository } from 'typeorm';
-import { Taste } from './models/taste.model';
+import { StringUtil } from '../util/util.string';
+import {
+  Connection,
+  FindConditions,
+  FindOneOptions,
+  ObjectID,
+  Repository,
+} from 'typeorm';
+import { Profile } from '../profile/models/profile.model';
 import { ProfileService } from '../profile/profile.service';
 import { User } from '../user/models/user.model';
-import { Profile } from '../profile/models/profile.model';
+import { Taste } from './models/taste.model';
+import { tasteMethod } from './taste.resolver';
 
 @Injectable()
 export class TasteService {
   constructor(
     @InjectRepository(Taste) private tasteRepository: Repository<Taste>,
     private profileService: ProfileService,
+    private connection: Connection,
+    private stringUtil: StringUtil,
   ) {}
 
   findOne(
@@ -43,29 +53,82 @@ export class TasteService {
     return this.tasteRepository.save(newTaste);
   }
 
-  //TODO: 테스트 필요(싫어요 상태일때 예외처리? 싫어요 삭제 후 좋아요?)
-  async likeTasteToggle(user: User, input: { name: string }) {
+  async likeTasteToggle(
+    user: User,
+    input: { name: string; method: tasteMethod },
+  ) {
+    if (!this.stringUtil.testString(input.name))
+      input.name = this.stringUtil.filteringString(input.name);
+    const oppMethod =
+      input.method === 'likers'
+        ? 'dislikers'
+        : input.method === 'dislikers'
+        ? 'likers'
+        : null;
+    if (!input.method || !oppMethod) throw new Error('지정되지 않은 메소드');
     const profile = await user.getProfile();
-    const existTaste = await this.tasteRepository.findOne(input);
-    const existLike = await this.tasteRepository.findOne({
-      where: { name: input.name, likers: profile },
+    const existTaste = await this.tasteRepository.findOne(
+      //입력한 name에 맞는 취향이 존재하는지 확인
+      { name: input.name },
+      {
+        relations: [input.method],
+      },
+    );
+    const existTasteRelation = await this.tasteRepository.findOne({
+      //내가 취향과 관계되어 있나 확인
+      join: {
+        alias: 'taste',
+        innerJoinAndSelect: { [input.method]: `taste.${input.method}` },
+      },
+      where: qb => {
+        qb.where('taste.name = :tasteName', {
+          tasteName: input.name,
+        }).andWhere(`${input.method}.id = :likersId`, { likersId: profile.id });
+      },
     });
-    if (existLike) {
-      //이미 좋아요 하고있는경우 -> 좋아요 삭제
-      const newLike = existLike.likers.filter(liker => liker.id !== profile.id);
-      await this.tasteRepository.save(newLike);
+    if (existTasteRelation) {
+      //이미 관계되어 있는경우 -> 관계 삭제
+      await this.connection
+        .createQueryBuilder()
+        .relation(Taste, input.method)
+        .of(existTasteRelation)
+        .remove(profile);
       return false;
     }
+
+    const existOppTasteRelation = await this.tasteRepository.findOne({
+      //반대 메소드로 관계되어있나 확인
+      join: {
+        alias: 'taste',
+        innerJoinAndSelect: { [oppMethod]: `taste.${oppMethod}` },
+      },
+      where: qb => {
+        qb.where('taste.name = :tasteName', {
+          tasteName: input.name,
+        }).andWhere(`${oppMethod}.id = :likersId`, { likersId: profile.id });
+      },
+    });
+    if (existOppTasteRelation) {
+      console.log('반대메소드');
+      //반대 메소드로 관계된 취향 -> 삭제 후 진행
+      await this.connection
+        .createQueryBuilder()
+        .relation(Taste, oppMethod)
+        .of(existOppTasteRelation)
+        .remove(profile);
+    }
     if (existTaste) {
-      //이미 존재하는 취향 -> 내 좋아요에 추가
-      existTaste.likers.push(await user.getProfile());
+      //이미 존재하는 취향 -> 지정한 메소드로 관계
+      console.log('존재하는취향');
+      existTaste[input.method].push(await user.getProfile());
       await this.tasteRepository.save(existTaste);
       return true;
     } else {
-      //새로운 취향 -> 취향 생성 후 좋아요에 추가
+      //새로운 취향 -> 취향 생성 후 지정한 메소드로 관계
+      console.log('새로운취향');
       const newTaste = await this.createTaste({
         name: input.name,
-        likers: [await user.getProfile()],
+        [input.method]: [await user.getProfile()],
       });
       await this.tasteRepository.save(newTaste);
       return true;

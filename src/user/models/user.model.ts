@@ -44,9 +44,9 @@ export class User {
 
   @OneToMany(
     type => FriendRelation,
-    friendRelation => friendRelation.friendReciver,
+    friendRelation => friendRelation.friendReceiver,
   )
-  friendRecives: FriendRelation[];
+  friendReceives: FriendRelation[];
 
   @OneToMany(
     type => FriendRelation,

@@ -1,10 +1,12 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { Profile } from '../../profile/models/profile.model';
 import { Taste } from '../../taste/models/taste.model';
 
 @Entity()
 @ObjectType()
+@Unique(['author', 'toTaste'])
+@Unique(['author', 'toProfile'])
 export class Review {
   @PrimaryGeneratedColumn()
   @Field(type => ID)
@@ -16,7 +18,15 @@ export class Review {
     { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
   )
   @Field(type => Taste)
-  taste: Taste;
+  toTaste: Taste;
+
+  @ManyToOne(
+    type => Profile,
+    profile => profile.takenReviews,
+    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
+  )
+  @Field(type => Taste)
+  toProfile: Taste;
 
   @ManyToOne(
     type => Profile,

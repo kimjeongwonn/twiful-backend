@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../user/models/user.model';
-import { Connection, Repository } from 'typeorm';
+import { Connection, FindOneOptions, Repository } from 'typeorm';
 import { Profile } from '../profile/models/profile.model';
 import { includedUserData } from './twitter.strategy';
 import { JwtService } from '@nestjs/jwt';
@@ -23,8 +23,9 @@ export class AuthService {
   //유저데이터 가져오기 (토큰제외)
   async getUser(userId: number) {
     const user = await this.userRepository.findOne(userId);
-    const getProfile = async () =>
-      await this.profileRepository.findOne({ user: user });
+    if (!user) throw new UnauthorizedException();
+    const getProfile = async (option?: FindOneOptions<Profile>) =>
+      this.profileRepository.findOne({ user: user }, option);
     return { ...user, getProfile };
   }
 

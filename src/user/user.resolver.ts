@@ -18,7 +18,6 @@ import { ArrayUtil } from '../util/util.array';
 import { FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
 import { UserService } from './user.service';
-
 @ArgsType()
 class PaginationArgs {
   @Field(type => Int)
@@ -75,20 +74,20 @@ export class UserResolver {
   }
 
   @ResolveField(returns => [User], { nullable: true })
-  async recivedFriends(
+  async receivedFriends(
     @Root() root: User,
     @Context() ctx: Express.Context,
   ): Promise<User[]> {
     if (root.id !== ctx.req.user.id) return;
-    return this.userService.getRecivedFriends(ctx.req.user.id);
+    return this.userService.getReceivedFriends(ctx.req.user.id);
   }
   @ResolveField(returns => Int, { nullable: true })
-  async recivedFriendsCount(
+  async receivedFriendsCount(
     @Root() root: User,
     @Context() ctx: Express.Context,
   ): Promise<number> {
     if (root.id !== ctx.req.user.id) return;
-    return this.userService.countRecivedFriends(ctx.req.user.id);
+    return this.userService.countReceivedFriends(ctx.req.user.id);
   }
 
   @ResolveField(type => [User])
@@ -168,11 +167,19 @@ export class UserResolver {
   @Mutation(returns => Boolean)
   async addFriend(
     @Context() ctx: Express.Context,
-    @Args('id') targetId: number,
+    @Args('id', { type: () => Int }) targetId: number,
     @Args('message', { nullable: true }) message?: string,
   ) {
     return this.userService.addFriend(ctx.req.user, targetId, message);
   }
+
+  //TODO:
+  @UseGuards(GqlAuthGuard)
+  @Mutation(returns => Boolean)
+  async deleteFriend(
+    @Context() ctx: Express.Context,
+    @Args('id', { type: () => Int }) targetId: number,
+  ) {}
 
   @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)

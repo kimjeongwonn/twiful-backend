@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ArrayUtil } from './util.array';
+import { StringUtil } from './util.string';
 
 @Module({
-  providers: [ArrayUtil],
-  exports: [ArrayUtil],
+  providers: [ArrayUtil, StringUtil],
+  exports: [ArrayUtil, StringUtil],
 })
 export class UtilModule {}

@@ -38,7 +38,7 @@ export class Taste {
 
   @OneToMany(
     type => Review,
-    review => review.taste,
+    review => review.toTaste,
   )
   @Field(type => [Review])
   reviews: Review[];

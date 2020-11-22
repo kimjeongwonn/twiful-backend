@@ -10,6 +10,7 @@ import { RecruitModule } from './recruit/recruit.module';
 import { ReviewModule } from './review/review.module';
 import { TasteModule } from './taste/taste.module';
 import { UserModule } from './user/user.module';
+import { NoticeModule } from './notice/notice.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserModule } from './user/user.module';
     ReviewModule,
     RecruitModule,
     TasteModule,
+    NoticeModule,
     GraphQLModule.forRoot({
       autoSchemaFile: join(__dirname, '/schema.gql'),
       context: ({ req }) => ({ req }),
