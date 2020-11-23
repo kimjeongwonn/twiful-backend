@@ -99,8 +99,13 @@ export class UserService {
         },
       );
       const validRcruit = await this.recruitService.validRecruit(profile);
-      const friendStatus = await this.friendStatus(user.id, targetId); //대상과 친구인지 확인
-      if (!(friendStatus.status === 'friended' || validRcruit || publicFriends))
+      if (
+        !(
+          validRcruit ||
+          publicFriends ||
+          (await this.friendStatus(user.id, targetId)).status === 'friended'
+        )
+      )
         //셋 중 하나도 아니라면
         throw new Error('친구목록을 볼 수 있는 권한이 없습니다');
     }
@@ -207,12 +212,11 @@ export class UserService {
     const validRcruit = this.recruitService.validRecruit(
       await rawUser.getProfile(),
     );
-    const friendStatus = await this.friendStatus(user.id, targetId);
     if (
       !(
         targetUser.publicTwitterUsername ||
         validRcruit ||
-        (await friendStatus.status) === 'friended'
+        (await this.friendStatus(user.id, targetId)).status === 'friended'
       )
     )
       throw new Error('트위터 링크를 볼 수 있는 권한이 없습니다'); //권한 없음

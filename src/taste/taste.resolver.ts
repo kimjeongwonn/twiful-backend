@@ -11,6 +11,7 @@ import {
   Resolver,
   Root,
 } from '@nestjs/graphql';
+import { Review } from '../review/models/review.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Profile } from '../profile/models/profile.model';
 import { Taste } from './models/taste.model';
@@ -37,17 +38,36 @@ class TasteInput {
 export class TasteResolver {
   constructor(private readonly tasteService: TasteService) {}
 
-  @ResolveField(type => [Profile])
+  @ResolveField(returns => [Profile])
   async likers(@Root() root: Taste) {
-    return this.tasteService.getTasteToLikers(root);
+    return this.tasteService.getTasteToLikersOrDislikers(root, 'likes');
+  }
+  @ResolveField(returns => [Profile])
+  async likersCount(@Root() root: Taste) {
+    return this.tasteService.getTasteToLikersOrDislikers(root, 'likes', true);
   }
 
-  @ResolveField(type => [Profile])
-  async dislikers(@Root() root: Taste) {
-    return this.tasteService.getTasteToDislikers(root);
+  // @ResolveField(returns => [Profile])
+  // async dislikers(@Root() root: Taste) {
+  //   return this.tasteService.getTasteToLikersOrDislikers(root, 'dislikes');
+  // }
+  // 싫어요 목록은 볼 수 없음
+
+  @ResolveField(returns => [Profile])
+  async dislikersCount(@Root() root: Taste) {
+    return this.tasteService.getTasteToLikersOrDislikers(
+      root,
+      'dislikes',
+      true,
+    );
   }
 
-  @ResolveField(type => [Taste]) //FR
+  @ResolveField(returns => [Review])
+  async reviews(@Root() root: Taste) {
+    return this.tasteService.getTasteToReview(root);
+  }
+
+  @ResolveField(returns => [Taste]) //FR
   recommends(): Taste[] {
     return;
   }
@@ -57,10 +77,10 @@ export class TasteResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)
-  async likeTasteToggle(
+  async addTaste(
     @Args('data') data: TasteInput,
     @Context() ctx: Express.Context,
   ) {
-    return this.tasteService.likeTasteToggle(ctx.req.user, data);
+    return this.tasteService.addTaste(ctx.req.user, data);
   }
 }

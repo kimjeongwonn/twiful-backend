@@ -35,12 +35,12 @@ export class UserResolver {
   ) {}
 
   //필드 리졸버 목록
-  @ResolveField(type => Profile, { nullable: true })
+  @ResolveField(returns => Profile, { nullable: true })
   async profile(@Root() root: User) {
     return this.userService.getUserToProfile(root.id);
   }
 
-  @ResolveField(type => [User])
+  @ResolveField(returns => [User])
   async friends(
     //친구목록 불러오기
     @Root() root: User,
@@ -50,7 +50,7 @@ export class UserResolver {
     return this.userService.getFriends(ctx.req.user, root.id, take, page);
   }
 
-  @ResolveField(type => Int)
+  @ResolveField(returns => Int)
   async friendsCount(@Root() root: User): Promise<number> {
     //친구 수 세기
     return this.userService.countFriends(root.id);
@@ -90,7 +90,7 @@ export class UserResolver {
     return this.userService.countReceivedFriends(ctx.req.user.id);
   }
 
-  @ResolveField(type => [User])
+  @ResolveField(returns => [User])
   async overlappedFriends(
     //겹치는 친구 불러오기
     @Context() ctx: Express.Context,
@@ -112,12 +112,12 @@ export class UserResolver {
     return inter;
   }
 
-  @ResolveField() //FR
+  @ResolveField(retruns => Boolean) //FR
   isSelf(@Root() root: User, @Context() ctx: Express.Context): boolean {
     return root.id === ctx.req.user.id;
   }
 
-  @ResolveField(type => FriendStatus) //FR
+  @ResolveField(returns => FriendStatus) //FR
   async friendStatus(
     @Root() root: User,
     @Context() ctx: Express.Context,

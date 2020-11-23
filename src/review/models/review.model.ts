@@ -1,5 +1,11 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from 'typeorm';
 import { Profile } from '../../profile/models/profile.model';
 import { Taste } from '../../taste/models/taste.model';
 
@@ -15,18 +21,28 @@ export class Review {
   @ManyToOne(
     type => Taste,
     taste => taste.reviews,
-    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
+    {
+      cascade: true,
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
+      nullable: true,
+    },
   )
-  @Field(type => Taste)
-  toTaste: Taste;
+  @Field(type => Taste, { nullable: true })
+  toTaste?: Taste;
 
   @ManyToOne(
     type => Profile,
     profile => profile.takenReviews,
-    { cascade: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' },
+    {
+      cascade: true,
+      onDelete: 'SET NULL',
+      onUpdate: 'CASCADE',
+      nullable: true,
+    },
   )
-  @Field(type => Taste)
-  toProfile: Taste;
+  @Field(type => Taste, { nullable: true })
+  toProfile?: Taste;
 
   @ManyToOne(
     type => Profile,
@@ -36,6 +52,11 @@ export class Review {
   @Field(type => Profile)
   author: Profile;
 
+  @Column({ type: 'text' })
   @Field()
-  updatedAt: Date;
+  text: string;
+
+  @Column({ type: 'timestamp' })
+  @Field()
+  createAt: Date;
 }

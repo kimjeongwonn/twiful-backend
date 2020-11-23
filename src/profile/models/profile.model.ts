@@ -65,12 +65,20 @@ export class Profile {
   @Field(type => [Taste])
   dislikes: Taste[];
 
+  @Column({ default: false })
+  @Field()
+  publicDislikes: boolean; //싫어요 공개여부
+
   @OneToMany(
     type => Review,
     review => review.author,
   )
   @Field(type => [Review])
   reviews: Review[];
+
+  @Column({ default: false })
+  @Field()
+  publicReviews: boolean; //작성한 리뷰 공개여부
 
   @OneToMany(
     type => Review,

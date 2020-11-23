@@ -9,16 +9,16 @@ import {
   Repository,
 } from 'typeorm';
 import { Profile } from '../profile/models/profile.model';
-import { ProfileService } from '../profile/profile.service';
 import { User } from '../user/models/user.model';
 import { Taste } from './models/taste.model';
 import { tasteMethod } from './taste.resolver';
+import { Review } from '../review/models/review.model';
 
 @Injectable()
 export class TasteService {
   constructor(
     @InjectRepository(Taste) private tasteRepository: Repository<Taste>,
-    private profileService: ProfileService,
+    @InjectRepository(Profile) private profileRepository: Repository<Profile>,
     private connection: Connection,
     private stringUtil: StringUtil,
   ) {}
@@ -36,16 +36,30 @@ export class TasteService {
     return this.tasteRepository.findOne(...args);
   }
 
-  async getTasteToLikers(taste: Taste) {
-    return (
-      await this.tasteRepository.findOne(taste, { relations: ['likers'] })
-    ).likers;
+  async getTasteToLikersOrDislikers(
+    taste: Taste,
+    method: 'likes' | 'dislikes',
+    count: boolean = false,
+  ): Promise<Profile[] | number> {
+    const options = {
+      join: {
+        alias: 'profile',
+        innerJoinAndSelect: { [method]: `profile.${method}` },
+      },
+      where: qb => {
+        qb.where(`${method}.id = :${method}Id`, {
+          [`${method}Id`]: taste.id,
+        });
+      },
+    };
+    if (count) return this.profileRepository.count(options);
+    return this.profileRepository.find(options);
   }
 
-  async getTasteToDislikers(taste: Taste) {
+  async getTasteToReview(taste: Taste): Promise<Review[]> {
     return (
-      await this.tasteRepository.findOne(taste, { relations: ['dislikers'] })
-    ).dislikers;
+      await this.tasteRepository.findOne(taste.id, { relations: ['reviews'] })
+    ).reviews;
   }
 
   async createTaste(input: { name: string; likers?: Profile[] }) {
@@ -53,10 +67,7 @@ export class TasteService {
     return this.tasteRepository.save(newTaste);
   }
 
-  async likeTasteToggle(
-    user: User,
-    input: { name: string; method: tasteMethod },
-  ) {
+  async addTaste(user: User, input: { name: string; method: tasteMethod }) {
     if (!this.stringUtil.testString(input.name))
       input.name = this.stringUtil.filteringString(input.name);
     const oppMethod =
@@ -111,9 +122,9 @@ export class TasteService {
     if (existOppTasteRelation) {
       console.log('반대메소드');
       //반대 메소드로 관계된 취향 -> 삭제 후 진행
-      await this.connection
+      await this.tasteRepository
         .createQueryBuilder()
-        .relation(Taste, oppMethod)
+        .relation(oppMethod)
         .of(existOppTasteRelation)
         .remove(profile);
     }

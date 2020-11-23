@@ -9,6 +9,7 @@ import {
   Mutation,
   InputType,
   Field,
+  Int,
 } from '@nestjs/graphql';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Recruit } from '../recruit/models/recruit.model';
@@ -44,26 +45,74 @@ export class ProfileResolver {
   async user(@Root() root: Profile) {
     return this.profileService.getProfileToUser(root);
   }
+
   @ResolveField(type => Recruit)
   async recruit(@Root() root: Profile) {
     return this.profileService.getProfileToRecruit(root);
   }
+
   @ResolveField(type => [Link])
   async link(@Root() root: Profile) {
     return this.profileService.getProfileToLink(root);
   }
+
   @ResolveField(type => [Link])
   async likes(@Root() root: Profile) {
-    return this.profileService.getProfileToLikes(root);
+    return this.profileService.getProfileToLikesOrDislikes(root, 'likers');
+  }
+  @ResolveField(type => Int)
+  async likesCount(@Root() root: Profile) {
+    return this.profileService.getProfileToLikesOrDislikes(
+      root,
+      'likers',
+      true,
+    );
+  }
+
+  @ResolveField(type => [Link])
+  async dislikes(@Context() ctx: Express.Context, @Root() root: Profile) {
+    return this.profileService.getProfileToLikesOrDislikes(
+      root,
+      'dislikers',
+      false,
+      ctx.req.user,
+    );
+  }
+  @ResolveField(type => Int)
+  async dislikesCount(@Root() root: Profile) {
+    return this.profileService.getProfileToLikesOrDislikes(
+      root,
+      'dislikers',
+      true,
+    );
+  }
+
+  @ResolveField(type => [Link])
+  async reviews(@Root() root: Profile) {
+    return this.profileService.getProfileToReviews(root, 'author');
+  }
+  @ResolveField(type => Int)
+  async reviewsCount(@Root() root: Profile) {
+    return this.profileService.getProfileToReviews(root, 'author', true);
   }
   @ResolveField(type => [Link])
-  async dislikes(@Root() root: Profile) {
-    return this.profileService.getProfileToDislikes(root);
+  async takenReviews(@Root() root: Profile) {
+    return this.profileService.getProfileToReviews(root, 'toProfile');
+  }
+  @ResolveField(type => Int)
+  async takenReviewsCount(@Root() root: Profile) {
+    return this.profileService.getProfileToReviews(root, 'toProfile', true);
   }
 
   @ResolveField(type => Boolean)
   async validRecruit(@Root() root: Profile) {
     return this.recruitService.validRecruit(root);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(type => String, { nullable: true })
+  async togglePublicDislikes(@Context() ctx: Express.Context) {
+    return this.profileService.togglePublicDislikes(ctx.req.user);
   }
 
   @UseGuards(GqlAuthGuard)
