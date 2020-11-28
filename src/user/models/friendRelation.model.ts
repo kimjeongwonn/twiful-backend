@@ -55,5 +55,5 @@ export class FriendStatus {
   message?: string;
 
   @Field()
-  status: string;
+  status: 'friended' | 'requested' | 'received' | 'not' | 'self';
 }

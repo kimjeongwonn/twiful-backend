@@ -105,7 +105,7 @@ export class ProfileResolver {
   }
 
   @ResolveField(type => Boolean)
-  async validRecruit(@Root() root: Profile) {
+  async isRecruited(@Root() root: Profile) {
     return this.recruitService.validRecruit(root);
   }
 

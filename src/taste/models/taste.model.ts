@@ -43,6 +43,6 @@ export class Taste {
   @Field(type => [Review])
   reviews: Review[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;
 }

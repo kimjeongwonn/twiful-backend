@@ -66,6 +66,14 @@ export class TasteResolver {
   async reviews(@Root() root: Taste) {
     return this.tasteService.getTasteToReview(root);
   }
+  @ResolveField(returns => Boolean)
+  async isLike(@Context() ctx: Express.Context, @Root() root: Taste) {
+    return this.tasteService.isRelation(ctx.req.user, root, false);
+  }
+  @ResolveField(returns => Boolean)
+  async isDislike(@Context() ctx: Express.Context, @Root() root: Taste) {
+    return this.tasteService.isRelation(ctx.req.user, root, true);
+  }
 
   @ResolveField(returns => [Taste]) //FR
   recommends(): Taste[] {

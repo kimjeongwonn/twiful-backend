@@ -96,20 +96,7 @@ export class UserResolver {
     @Context() ctx: Express.Context,
     @Root() root: User,
   ): Promise<User[]> {
-    const myFriends = await this.userService.getFriends(
-      ctx.req.user,
-      ctx.req.user.id,
-    );
-    const targetFriends = await this.userService.getFriends(
-      ctx.req.user,
-      root.id,
-    );
-    const { inter } = this.array.getArraySet(
-      myFriends,
-      targetFriends,
-      'twitterId',
-    );
-    return inter;
+    return this.userService.overlappedFriends(ctx.req.user, root.id);
   }
 
   @ResolveField(retruns => Boolean) //FR
@@ -140,6 +127,11 @@ export class UserResolver {
   @UseGuards(GqlAuthGuard)
   @Query(returns => User)
   async lookUser(@Args('id', { type: () => Int }) id: number) {
+    return this.userService.findOne({ id });
+  }
+
+  @Query(returns => User)
+  async lookUserNonCert(@Args('id', { type: () => Int }) id: number) {
     return this.userService.findOne({ id });
   }
 
@@ -179,7 +171,9 @@ export class UserResolver {
   async deleteFriend(
     @Context() ctx: Express.Context,
     @Args('id', { type: () => Int }) targetId: number,
-  ) {}
+  ) {
+    this.userService.deleteFriend(ctx.req.user, targetId);
+  }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)

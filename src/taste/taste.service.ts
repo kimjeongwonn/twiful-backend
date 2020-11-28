@@ -62,6 +62,26 @@ export class TasteService {
     ).reviews;
   }
 
+  async isRelation(user: User, taste: Taste, dislike: boolean) {
+    const method = dislike ? 'dislikers' : 'likers';
+    const profile = await user.getProfile();
+    const result = await this.tasteRepository.findOne({
+      join: {
+        alias: 'taste',
+        innerJoinAndSelect: { [method]: `taste.${method}` },
+      },
+      where: qb => {
+        qb.where('taste.id = :tasteId', {
+          tasteId: taste.id,
+        }).andWhere(`${method}.id = :${method}Id`, {
+          [`${method}Id`]: profile.id,
+        });
+      },
+    });
+    console.log(result);
+    return !!result;
+  }
+
   async createTaste(input: { name: string; likers?: Profile[] }) {
     const newTaste = await this.tasteRepository.create(input);
     return this.tasteRepository.save(newTaste);

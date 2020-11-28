@@ -129,4 +129,12 @@ export class TwitterService {
       else return 'blocked';
     }
   }
+
+  async writeTwit(
+    user: User,
+    data: { status: string; attachment_url: string },
+  ) {
+    this.setTwitter(user);
+    return !!this._client.post('statuses/update', data);
+  }
 }
