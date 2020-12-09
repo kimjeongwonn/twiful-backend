@@ -6,7 +6,6 @@ import {
   CreateDateColumn,
   Entity,
   ManyToMany,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -27,14 +26,7 @@ export class Taste {
     profile => profile.likes,
   )
   @Field(type => [Profile])
-  likers: Profile[];
-
-  @ManyToMany(
-    type => Profile,
-    profile => profile.dislikes,
-  )
-  @Field(type => [Profile])
-  dislikers: Profile[];
+  profileRelation: Profile[];
 
   @OneToMany(
     type => Review,

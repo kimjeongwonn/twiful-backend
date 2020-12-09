@@ -9,6 +9,7 @@ import {
   Resolver,
   Root,
 } from '@nestjs/graphql';
+import { Taste } from '../taste/models/taste.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Profile } from '../profile/models/profile.model';
 import { Recruit } from './models/recruit.model';
@@ -20,6 +21,8 @@ export class RecruitInput {
   toDate?: Date;
   @Field({ nullable: true })
   caption?: string;
+  @Field(type => [Number])
+  tasteIds: Number[];
 }
 
 @Resolver(of => Recruit)

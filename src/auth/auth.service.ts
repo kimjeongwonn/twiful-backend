@@ -42,9 +42,12 @@ export class AuthService {
 
   //로그인 시간 추가
   async loginDateAdd(profile) {
-    const result = await this.profileRepository.update(profile, {
-      lastLoginAt: new Date(),
-    });
+    const result = await this.profileRepository.update(
+      { id: profile.id },
+      {
+        lastLoginAt: new Date(),
+      },
+    );
     return !!result.affected;
   }
 
