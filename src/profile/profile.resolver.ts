@@ -11,6 +11,7 @@ import {
   Field,
   Int,
 } from '@nestjs/graphql';
+import { Taste } from 'src/taste/models/taste.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Recruit } from '../recruit/models/recruit.model';
 import { RecruitService } from '../recruit/recruit.service';
@@ -56,24 +57,20 @@ export class ProfileResolver {
     return this.profileService.getProfileToLink(root);
   }
 
-  @ResolveField(type => [Link])
+  @ResolveField(type => [Taste])
   async likes(@Root() root: Profile) {
-    return this.profileService.getProfileToLikesOrDislikes(root, 'likers');
+    return this.profileService.getProfileToLikesOrDislikes(root, 'like');
   }
   @ResolveField(type => Int)
   async likesCount(@Root() root: Profile) {
-    return this.profileService.getProfileToLikesOrDislikes(
-      root,
-      'likers',
-      true,
-    );
+    return this.profileService.getProfileToLikesOrDislikes(root, 'like', true);
   }
 
-  @ResolveField(type => [Link])
+  @ResolveField(type => [Taste])
   async dislikes(@Context() ctx: Express.Context, @Root() root: Profile) {
     return this.profileService.getProfileToLikesOrDislikes(
       root,
-      'dislikers',
+      'dislike',
       false,
       ctx.req.user,
     );
@@ -82,7 +79,7 @@ export class ProfileResolver {
   async dislikesCount(@Root() root: Profile) {
     return this.profileService.getProfileToLikesOrDislikes(
       root,
-      'dislikers',
+      'dislike',
       true,
     );
   }

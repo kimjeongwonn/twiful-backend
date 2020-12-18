@@ -8,12 +8,13 @@ import { Profile } from './models/profile.model';
 import { ProfileResolver } from './profile.resolver';
 import { ProfileService } from './profile.service';
 import { Review } from '../review/models/review.model';
+import { TasteRelation } from '../taste/models/tasteRelation';
 
 @Module({
   imports: [
     AuthModule,
     RecruitModule,
-    TypeOrmModule.forFeature([Link, Profile, Taste, Review]),
+    TypeOrmModule.forFeature([Link, Profile, Taste, TasteRelation, Review]),
   ],
   providers: [ProfileService, ProfileResolver],
   exports: [ProfileService],

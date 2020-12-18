@@ -13,6 +13,7 @@ import {
 import { Link } from './models/link.model';
 import { Profile } from './models/profile.model';
 import { Review } from '../review/models/review.model';
+import { TasteRelation } from '../taste/models/tasteRelation';
 
 @Injectable()
 export class ProfileService {
@@ -21,6 +22,8 @@ export class ProfileService {
     @InjectRepository(Link) private linkRepository: Repository<Link>,
     @InjectRepository(Taste) private tasetRepository: Repository<Taste>,
     @InjectRepository(Review) private reviewRepository: Repository<Review>,
+    @InjectRepository(TasteRelation)
+    private tasteRelationRepository: Repository<TasteRelation>,
     private recruitService: RecruitService,
   ) {}
 
@@ -56,29 +59,24 @@ export class ProfileService {
 
   async getProfileToLikesOrDislikes(
     profile: Profile,
-    method: 'likers' | 'dislikers',
+    method: 'like' | 'dislike',
     count: boolean = false,
     user?: User,
   ) {
     if (
-      method === 'dislikers' &&
+      method === 'dislike' &&
       !profile.publicDislikes &&
       (await user?.getProfile()).id !== profile.id
     )
       throw new Error('싫어요 비공개');
     const options = {
-      join: {
-        alias: 'taste',
-        innerJoinAndSelect: { [method]: `taste.${method}` },
-      },
-      where: qb => {
-        qb.where(`${method}.id = :${method}Id`, {
-          [`${method}Id`]: profile.id,
-        });
-      },
+      where: { profile, status: method },
+      relations: ['taste'],
     };
-    if (count) return this.tasetRepository.count(options);
-    return this.tasetRepository.find({ ...options });
+    if (count) return this.profileRepository.count(options);
+    return (await this.tasteRelationRepository.find(options)).map(
+      relation => relation.taste,
+    );
   }
 
   async getProfileToReviews(

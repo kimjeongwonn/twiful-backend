@@ -147,7 +147,9 @@
 ## 코드 작성 시 참고
 
 - twitter api에서 error 처리를 thorw new Error(err)가 아니라 throw err로 던져줘야함
-- twitter passport 모듈에서 force_login을 직접 추가해줘야함
+- twitter passport 모듈에서 을 직접 추가해줘야함 (
+  options.userAuthorizationURL = options.userAuthorizationURL || 'https://api.twitter.com/oauth/authenticate?force_login=true';
+  )
 - ORM으로 관계설정 한 경우, GQL과 자동연계가 안되므로 직접 필드리졸버를 통해 쿼리 작성해야 함
 
 ## 해결하기 어려운 문제

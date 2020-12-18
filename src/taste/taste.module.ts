@@ -6,9 +6,10 @@ import { Taste } from './models/taste.model';
 import { TasteResolver } from './taste.resolver';
 import { TasteService } from './taste.service';
 import { Profile } from '../profile/models/profile.model';
+import { TasteRelation } from './models/tasteRelation';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Taste, Profile])],
+  imports: [TypeOrmModule.forFeature([Taste, TasteRelation, Profile])],
   providers: [TasteService, TasteResolver, StringUtil],
   exports: [TasteService],
 })

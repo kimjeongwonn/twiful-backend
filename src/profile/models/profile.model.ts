@@ -1,5 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
+import { TasteRelation } from '../../taste/models/tasteRelation';
 import {
   Column,
   CreateDateColumn,
@@ -36,7 +37,7 @@ export class Profile {
 
   @IsEmail()
   @Column({ unique: true, nullable: true })
-  @Field()
+  @Field({ nullable: true })
   email?: string;
 
   @Column({ nullable: true })
@@ -47,23 +48,11 @@ export class Profile {
   @Field({ nullable: true })
   profileImage?: string;
 
-  @ManyToMany(
-    type => Taste,
-    taste => taste.likers,
-    { cascade: true, onDelete: 'CASCADE' },
+  @OneToMany(
+    type => TasteRelation,
+    tasteRelation => tasteRelation.profile,
   )
-  @JoinTable()
-  @Field(type => [Taste])
-  likes: Taste[];
-
-  @ManyToMany(
-    type => Taste,
-    taste => taste.dislikers,
-    { cascade: true, onDelete: 'CASCADE' },
-  )
-  @JoinTable()
-  @Field(type => [Taste])
-  dislikes: Taste[];
+  profileToTaste: TasteRelation[];
 
   @Column({ default: false })
   @Field()

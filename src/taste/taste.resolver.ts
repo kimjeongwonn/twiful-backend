@@ -4,6 +4,7 @@ import {
   Context,
   Field,
   InputType,
+  Int,
   Mutation,
   Query,
   registerEnumType,
@@ -18,8 +19,8 @@ import { Taste } from './models/taste.model';
 import { TasteService } from './taste.service';
 
 export enum tasteMethod {
-  like = 'likers',
-  dislike = 'dislikers',
+  like = 'like',
+  dislike = 'dislike',
 }
 
 registerEnumType(tasteMethod, {
@@ -40,11 +41,11 @@ export class TasteResolver {
 
   @ResolveField(returns => [Profile])
   async likers(@Root() root: Taste) {
-    return this.tasteService.getTasteToLikersOrDislikers(root, 'likes');
+    return this.tasteService.getTasteToLikersOrDislikers(root, 'like');
   }
-  @ResolveField(returns => [Profile])
+  @ResolveField(returns => Int)
   async likersCount(@Root() root: Taste) {
-    return this.tasteService.getTasteToLikersOrDislikers(root, 'likes', true);
+    return this.tasteService.getTasteToLikersOrDislikers(root, 'like', true);
   }
 
   // @ResolveField(returns => [Profile])
@@ -53,26 +54,19 @@ export class TasteResolver {
   // }
   // 싫어요 목록은 볼 수 없음
 
-  @ResolveField(returns => [Profile])
+  @ResolveField(returns => Int)
   async dislikersCount(@Root() root: Taste) {
-    return this.tasteService.getTasteToLikersOrDislikers(
-      root,
-      'dislikes',
-      true,
-    );
+    return this.tasteService.getTasteToLikersOrDislikers(root, 'dislike', true);
   }
 
   @ResolveField(returns => [Review])
   async reviews(@Root() root: Taste) {
     return this.tasteService.getTasteToReview(root);
   }
-  @ResolveField(returns => Boolean)
-  async isLike(@Context() ctx: Express.Context, @Root() root: Taste) {
-    return this.tasteService.isRelation(ctx.req.user, root, false);
-  }
-  @ResolveField(returns => Boolean)
-  async isDislike(@Context() ctx: Express.Context, @Root() root: Taste) {
-    return this.tasteService.isRelation(ctx.req.user, root, true);
+
+  @ResolveField(returns => String)
+  async isRelation(@Context() ctx: Express.Context, @Root() root: Taste) {
+    return this.tasteService.isRelation(ctx.req.user, root);
   }
 
   @ResolveField(returns => [Taste]) //FR
@@ -85,10 +79,10 @@ export class TasteResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)
-  async addTaste(
+  async toggleTaste(
     @Args('data') data: TasteInput,
     @Context() ctx: Express.Context,
   ) {
-    return this.tasteService.addTaste(ctx.req.user, data);
+    return this.tasteService.toggleTaste(ctx.req.user, data);
   }
 }

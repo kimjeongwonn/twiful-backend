@@ -6,9 +6,11 @@ import {
   CreateDateColumn,
   Entity,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { TasteRelation } from './tasteRelation';
 
 @Entity()
 @ObjectType()
@@ -21,12 +23,11 @@ export class Taste {
   @Field()
   name: string;
 
-  @ManyToMany(
-    type => Profile,
-    profile => profile.likes,
+  @OneToMany(
+    type => TasteRelation,
+    tasteRelation => tasteRelation.profile,
   )
-  @Field(type => [Profile])
-  profileRelation: Profile[];
+  tasteToProfile: TasteRelation[];
 
   @OneToMany(
     type => Review,
