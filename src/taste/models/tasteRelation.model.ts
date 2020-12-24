@@ -23,6 +23,9 @@ export class TasteRelation {
   @Field(type => Profile)
   profile: Profile;
 
+  @Column()
+  profileId: number;
+
   @ManyToOne(
     type => Taste,
     taste => taste.tasteToProfile,
@@ -30,6 +33,9 @@ export class TasteRelation {
   )
   @Field(type => Taste)
   taste: Taste;
+
+  @Column()
+  tasteId: number;
 
   @Column()
   @Field()

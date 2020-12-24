@@ -1,6 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
-import { TasteRelation } from '../../taste/models/tasteRelation';
+import { TasteRelation } from '../../taste/models/tasteRelation.model';
 import {
   Column,
   CreateDateColumn,

@@ -28,8 +28,11 @@ registerEnumType(tasteMethod, {
 });
 @InputType()
 class TasteInput {
-  @Field()
-  name: string;
+  @Field({ nullable: true })
+  name?: string;
+
+  @Field({ nullable: true })
+  id?: number;
 
   @Field(type => tasteMethod)
   method: tasteMethod;

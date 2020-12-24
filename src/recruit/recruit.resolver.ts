@@ -4,6 +4,7 @@ import {
   Context,
   Field,
   InputType,
+  Int,
   Mutation,
   ResolveField,
   Resolver,
@@ -17,12 +18,19 @@ import { RecruitService } from './recruit.service';
 
 @InputType()
 export class RecruitInput {
-  @Field({ nullable: true })
+  @Field(type => Date, { nullable: true })
   toDate?: Date;
-  @Field({ nullable: true })
+  @Field(type => String, { nullable: true })
   caption?: string;
-  @Field(type => [Number])
-  tasteIds: Number[];
+}
+
+@InputType()
+export class TasteSetInput {
+  @Field(type => [Int])
+  likeIds: number[];
+
+  @Field(type => [Int])
+  dislikeIds: number[];
 }
 
 @Resolver(of => Recruit)
@@ -47,5 +55,20 @@ export class RecruitResolver {
   @Mutation(returns => Boolean)
   async endRecruit(@Context() ctx: Express.Context) {
     return this.recruitService.endRecruit(ctx.req.user);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(returns => Boolean)
+  async setTaste(
+    @Context() ctx: Express.Context,
+    @Args('tasteIds') tasteIds: TasteSetInput,
+  ) {
+    return this.recruitService.setTaste(ctx.req.user, tasteIds);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(retruns => [Profile])
+  async getRecommendedRecruits(@Context() ctx: Express.Context) {
+    return this.recruitService.getRecommendedRecruits(ctx.req.user);
   }
 }

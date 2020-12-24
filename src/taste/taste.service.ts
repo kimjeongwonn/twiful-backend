@@ -13,7 +13,7 @@ import { User } from '../user/models/user.model';
 import { Taste } from './models/taste.model';
 import { tasteMethod } from './taste.resolver';
 import { Review } from '../review/models/review.model';
-import { TasteRelation } from './models/tasteRelation';
+import { TasteRelation } from './models/tasteRelation.model';
 
 @Injectable()
 export class TasteService {
@@ -38,7 +38,7 @@ export class TasteService {
   async findOne(...args): Promise<Taste> {
     return this.tasteRepository.findOne(...args);
   }
-  //TODO: 관계 목록 불러오기
+
   async getTasteToLikersOrDislikers(
     taste: Taste,
     method: 'like' | 'dislike',
@@ -73,18 +73,25 @@ export class TasteService {
     return this.tasteRepository.save(newTaste);
   }
 
-  async toggleTaste(user: User, input: { name: string; method: tasteMethod }) {
+  async toggleTaste(
+    user: User,
+    input: { name?: string; id?: number; method: tasteMethod },
+  ) {
     if (!this.stringUtil.testString(input.name))
       input.name = this.stringUtil.filteringString(input.name);
+    if (input.name === '' && !input.id) throw new Error('입력값이 없습니다!');
     const oppMethod = input.method === 'dislike' ? 'like' : 'dislike';
     const profile = await user.getProfile();
+    const tasteFindOption = input.id ? { id: input.id } : { name: input.name };
     const existTaste =
-      (await this.tasteRepository.findOne({ name: input.name })) ||
-      (await this.createTaste(input.name)); //입력한 name에 맞는 취향이 존재하는지 확인 없다면 생성
+      (await this.tasteRepository.findOne(tasteFindOption)) ||
+      (await this.createTaste(input?.name)); //입력한 name에 맞는 취향이 존재하는지 확인 없다면 생성
     const existTasteRelation = await this.tasteRelationRepository.findOne({
       where: { taste: existTaste, profile },
     }); //이미 좋아요or싫어요한 취향있는지 확인
     if (existTasteRelation) {
+      if (existTasteRelation.includeRecruit)
+        throw new Error('트친소에 적용중인 취향은 변경할 수 없습니다!');
       if (existTasteRelation.status === input.method) {
         const result = await this.tasteRelationRepository.remove(
           existTasteRelation,

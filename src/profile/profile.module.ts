@@ -8,7 +8,7 @@ import { Profile } from './models/profile.model';
 import { ProfileResolver } from './profile.resolver';
 import { ProfileService } from './profile.service';
 import { Review } from '../review/models/review.model';
-import { TasteRelation } from '../taste/models/tasteRelation';
+import { TasteRelation } from '../taste/models/tasteRelation.model';
 
 @Module({
   imports: [

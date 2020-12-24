@@ -10,7 +10,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { TasteRelation } from './tasteRelation';
+import { TasteRelation } from './tasteRelation.model';
 
 @Entity()
 @ObjectType()

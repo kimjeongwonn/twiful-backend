@@ -13,7 +13,7 @@ import {
 import { Link } from './models/link.model';
 import { Profile } from './models/profile.model';
 import { Review } from '../review/models/review.model';
-import { TasteRelation } from '../taste/models/tasteRelation';
+import { TasteRelation } from '../taste/models/tasteRelation.model';
 
 @Injectable()
 export class ProfileService {
