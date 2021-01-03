@@ -1,10 +1,9 @@
 import { UseGuards } from '@nestjs/common';
 import {
   Args,
-  ArgsType,
   Context,
   Field,
-  ID,
+  InputType,
   Int,
   Mutation,
   Query,
@@ -12,19 +11,19 @@ import {
   Resolver,
   Root,
 } from '@nestjs/graphql';
-import { Profile } from '../profile/models/profile.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Profile } from '../profile/models/profile.model';
 import { ArrayUtil } from '../util/util.array';
 import { FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
 import { UserService } from './user.service';
-@ArgsType()
-class PaginationArgs {
+@InputType()
+export class PaginationArgs {
   @Field(type => Int)
   take: number = 20;
 
   @Field(type => Int)
-  page: number = 0;
+  cursor: number = 0;
 }
 
 @Resolver(of => User)
@@ -44,10 +43,10 @@ export class UserResolver {
   async friends(
     //친구목록 불러오기
     @Root() root: User,
-    @Args() { take, page }: PaginationArgs,
+    @Args('page') page: PaginationArgs,
     @Context() ctx: Express.Context,
   ): Promise<User[]> {
-    return this.userService.getFriends(ctx.req.user, root.id, take, page);
+    return this.userService.getFriends(ctx.req.user, root.id, page);
   }
 
   @ResolveField(returns => Int)
@@ -56,15 +55,12 @@ export class UserResolver {
     return this.userService.countFriends(root.id);
   }
 
-  @ResolveField(returns => [User], { nullable: true })
-  async requestedFriends(
-    @Root() root: User,
-    @Context() ctx: Express.Context,
-  ): Promise<User[]> {
+  @ResolveField(returns => [User])
+  async requestedFriends(@Root() root: User, @Context() ctx: Express.Context) {
     if (root.id !== ctx.req.user.id) return;
-    return this.userService.getRequestedFriends(ctx.req.user.id);
+    return await this.userService.getRequestedFriends(ctx.req.user.id);
   }
-  @ResolveField(returns => Int, { nullable: true })
+  @ResolveField(returns => Int)
   async requestedFriendsCount(
     @Root() root: User,
     @Context() ctx: Express.Context,
@@ -73,15 +69,12 @@ export class UserResolver {
     return this.userService.countRequestedFriends(ctx.req.user.id);
   }
 
-  @ResolveField(returns => [User], { nullable: true })
-  async receivedFriends(
-    @Root() root: User,
-    @Context() ctx: Express.Context,
-  ): Promise<User[]> {
+  @ResolveField(returns => [User])
+  async receivedFriends(@Root() root: User, @Context() ctx: Express.Context) {
     if (root.id !== ctx.req.user.id) return;
-    return this.userService.getReceivedFriends(ctx.req.user.id);
+    return await this.userService.getReceivedFriends(ctx.req.user.id);
   }
-  @ResolveField(returns => Int, { nullable: true })
+  @ResolveField(returns => Int)
   async receivedFriendsCount(
     @Root() root: User,
     @Context() ctx: Express.Context,

@@ -1,26 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { FindConditions, FindOneOptions, ObjectID, Repository } from 'typeorm';
 import { RecruitService } from '../recruit/recruit.service';
-import { Taste } from '../taste/models/taste.model';
-import { User } from '../user/models/user.model';
-import {
-  FindConditions,
-  FindOneOptions,
-  ObjectID,
-  QueryBuilder,
-  Repository,
-} from 'typeorm';
-import { Link } from './models/link.model';
-import { Profile } from './models/profile.model';
 import { Review } from '../review/models/review.model';
 import { TasteRelation } from '../taste/models/tasteRelation.model';
+import { User } from '../user/models/user.model';
+import { Link } from './models/link.model';
+import { Profile } from './models/profile.model';
 
 @Injectable()
 export class ProfileService {
   constructor(
     @InjectRepository(Profile) private profileRepository: Repository<Profile>,
     @InjectRepository(Link) private linkRepository: Repository<Link>,
-    @InjectRepository(Taste) private tasetRepository: Repository<Taste>,
     @InjectRepository(Review) private reviewRepository: Repository<Review>,
     @InjectRepository(TasteRelation)
     private tasteRelationRepository: Repository<TasteRelation>,

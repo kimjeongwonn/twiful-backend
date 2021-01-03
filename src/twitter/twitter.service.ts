@@ -72,6 +72,7 @@ export class TwitterService {
     this.setTwitter(user);
     return this._client.post('/friendships/create', {
       user_id: targetUserTwitterId,
+      follow: true,
     });
   }
 
@@ -83,7 +84,7 @@ export class TwitterService {
     });
   }
 
-  //맞팔유저 가져오기 **테스트 필요**
+  //TODO: 맞팔유저 가져오기 **테스트 필요**
   async getTwitterFriends(user: User) {
     this.setTwitter(user);
     const followers = await this.getFullFollowers(user);
@@ -96,6 +97,7 @@ export class TwitterService {
     const { inter } = this.array.getArraySet(shorten, longest);
     const result: TwitterUserDto[] = [];
 
+    if (inter.length === 0) return [];
     do {
       const splitArray = inter.splice(0, 100);
       const splitResult = (await this._client.get('/users/lookup', {
@@ -103,7 +105,7 @@ export class TwitterService {
       })) as TwitterUserDto[];
       result.push(...splitResult);
     } while (inter.length >= 100);
-    //100명 이상이면 분할하여 GET요청 **테스트 필요**
+    //TODO: 100명 이상이면 분할하여 GET요청 **테스트 필요**
 
     return result;
   }

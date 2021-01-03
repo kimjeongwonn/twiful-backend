@@ -10,9 +10,9 @@ import {
   Resolver,
   Root,
 } from '@nestjs/graphql';
-import { Taste } from '../taste/models/taste.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Profile } from '../profile/models/profile.model';
+import { Candidate } from './models/canditate.model';
 import { Recruit } from './models/recruit.model';
 import { RecruitService } from './recruit.service';
 
@@ -67,7 +67,7 @@ export class RecruitResolver {
   }
 
   @UseGuards(GqlAuthGuard)
-  @Mutation(retruns => [Profile])
+  @Mutation(retruns => [Candidate])
   async getRecommendedRecruits(@Context() ctx: Express.Context) {
     return this.recruitService.getRecommendedRecruits(ctx.req.user);
   }

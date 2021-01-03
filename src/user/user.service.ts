@@ -4,6 +4,7 @@ import {
   FindConditions,
   FindManyOptions,
   FindOneOptions,
+  MoreThan,
   ObjectID,
   Repository,
 } from 'typeorm';
@@ -14,6 +15,7 @@ import { TwitterService } from '../twitter/twitter.service';
 import { ArrayUtil } from '../util/util.array';
 import { FriendRelation, FriendStatus } from './models/friendRelation.model';
 import { User } from './models/user.model';
+import { PaginationArgs } from './user.resolver';
 
 @Injectable()
 export class UserService {
@@ -85,8 +87,7 @@ export class UserService {
   async getFriends(
     user: User,
     targetUserId: number,
-    take?: number,
-    page?: number,
+    page?: PaginationArgs,
   ): Promise<User[]> {
     if (user.id !== targetUserId) {
       //타인의 친구목록을 볼 때는 검증을 거침
@@ -111,15 +112,20 @@ export class UserService {
     }
     const findOptions: FindManyOptions<FriendRelation> = {
       where: [
-        { friendRequesterId: targetUserId, concluded: true },
-        { friendReceiverId: targetUserId, concluded: true },
+        {
+          friendRequesterId: targetUserId,
+          concluded: true,
+          id: MoreThan(page.cursor),
+        },
+        {
+          friendReceiverId: targetUserId,
+          concluded: true,
+          id: MoreThan(page.cursor),
+        },
       ],
       relations: ['friendReceiver', 'friendRequester'],
+      take: page.take,
     };
-    if (take && page) {
-      findOptions.take = take;
-      findOptions.skip = take * page;
-    }
     const friendsResult = await this.friendRelationRepository.find(findOptions);
     return friendsResult.map(friend => {
       if (friend.friendReceiverId === targetUserId)
@@ -153,35 +159,23 @@ export class UserService {
   }
 
   //친구 신청목록 가져오기
-  async getRequestedFriends(
-    id: number,
-    take: number = 20,
-    page: number = 0,
-  ): Promise<User[]> {
+  async getRequestedFriends(id: number, getRelations?: boolean) {
     const result = await this.friendRelationRepository.find({
       select: ['id', 'friendReceiverId'],
       where: { friendRequesterId: id, concluded: false },
       relations: ['friendReceiver'],
-      take,
-      skip: take * page,
     });
-    return result.map(friend => friend.friendReceiver);
+    return getRelations ? result : result.map(friend => friend.friendReceiver);
   }
 
   //친구 요청목록 가져오기
-  async getReceivedFriends(
-    id: number,
-    take: number = 20,
-    page: number = 0,
-  ): Promise<User[]> {
+  async getReceivedFriends(userId: number, getRelations?: boolean) {
     const result = await this.friendRelationRepository.find({
       select: ['id', 'friendRequesterId'],
-      where: { friendReceiverId: id, concluded: false },
+      where: { friendReceiverId: userId, concluded: false },
       relations: ['friendRequester'],
-      take,
-      skip: take * page,
     });
-    return result.map(friend => friend.friendRequester);
+    return getRelations ? result : result.map(friend => friend.friendRequester);
   }
 
   //친구수 세기
@@ -362,8 +356,14 @@ export class UserService {
       try {
         //타겟 유저의 사용자 정보를 받아오기(토큰과 시크릿)
         const user = await this.authService.getUserData(rawUser.id);
-        const targetUser: User = await this.authService.getUserData(
-          targetUserId,
+        const targetUser = await this.authService.getUserData(targetUserId);
+        const mystatus = await this.twitterService.relationCheck(
+          targetUser,
+          user.twitterId,
+        );
+        const targetstatus = await this.twitterService.relationCheck(
+          user,
+          targetUser.twitterId,
         );
         //서로 맞팔하기
         await this.twitterService.followUser(targetUser, user.twitterId);
@@ -425,17 +425,27 @@ export class UserService {
       );
     const user = await this.authService.getUserData(rawUser.id);
     const targetUser = await this.authService.getUserData(targetUserId);
-    const relationToSelf = async () =>
-      await this.twitterService.relationCheck(targetUser, user.twitterId);
-    const relationToTarget = async () =>
-      await this.twitterService.relationCheck(user, targetUser.twitterId);
+    let relationToSelf: 'blocked' | 'clear' | 'protected' | 'follwing';
+    let relationToTarget: 'blocked' | 'clear' | 'protected' | 'follwing';
     //내가 차단당했나 확인한뒤, 상대방이 나를 차단했나 확인
     if (
-      (await relationToSelf()) === 'blocked' ||
-      (await relationToTarget()) === 'blocked'
+      (relationToSelf = await this.twitterService.relationCheck(
+        targetUser,
+        user.twitterId,
+      )) === 'blocked' ||
+      (relationToTarget = await this.twitterService.relationCheck(
+        user,
+        targetUser.twitterId,
+      )) === 'blocked'
     )
       throw new Error(
         '차단하거나 차단당한 사용자에게는 친구요청을 할 수 없습니다.',
+      );
+    else if (relationToSelf === 'protected')
+      throw new Error('계정 프로텍트를 풀어야 친구요청을 할 수 있습니다.');
+    else if (relationToTarget === 'protected')
+      throw new Error(
+        '상대방의 계정이 프로텍트 상태이기 때문에 친구요청을 할 수 없습니다.',
       );
     const newRelation = await this.friendRelationRepository.create({
       friendRequesterId: rawUser.id,
