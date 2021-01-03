@@ -141,7 +141,7 @@ export class RecruitService {
     const myRelations = await this.tasteRelationRepository.find({
       where: { profileId: profile.id, includeRecruit: true },
     });
-    if (!myRelations) throw new Error('반영할 취향이 없습니다');
+    if (myRelations.length === 0) throw new Error('반영할 취향이 없습니다');
     myRelations.forEach(taste => {
       if (taste.status === 'like') myTastes.likes.push(taste.tasteId);
       else if (taste.status === 'dislike')
@@ -175,8 +175,14 @@ export class RecruitService {
             'CASE WHEN tasteId IN (:...likeTasteIds) THEN "like" WHEN tasteId IN (:...dislikeTasteIds) THEN "dislike" ELSE NULL END',
             'toStatus',
           )
-          .setParameter('likeTasteIds', myTastes.likes)
-          .setParameter('dislikeTasteIds', myTastes.dislikes)
+          .setParameter(
+            'likeTasteIds',
+            myTastes.likes.length > 0 ? myTastes.likes : [null],
+          )
+          .setParameter(
+            'dislikeTasteIds',
+            myTastes.dislikes.length > 0 ? myTastes.dislikes : [null],
+          )
           .addSelect(
             'CASE WHEN status="like" THEN "like" WHEN status="dislike" THEN "dislike" ELSE NULL END',
             'fromStatus',
@@ -186,9 +192,11 @@ export class RecruitService {
           .andWhere('includeRecruit = 1')
           .andWhere('tasteId IN (:...tasteIds)', {
             tasteIds: [...myTastes.likes, ...myTastes.dislikes],
-          });
+          })
+          .limit(50);
       }, 'taste_relation_table')
       .groupBy('profileId')
+      .orderBy('likeToLike,dislikeToDislike')
       .getRawMany<Candidate>();
     if (candidateList.length === 0) throw new Error('후보목록이 없습니다');
     return candidateList;
