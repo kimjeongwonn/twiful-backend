@@ -87,7 +87,7 @@ export class UserService {
   async getFriends(
     user: User,
     targetUserId: number,
-    page?: PaginationArgs,
+    page: PaginationArgs = { take: 20, cursor: 0 },
   ): Promise<User[]> {
     if (user.id !== targetUserId) {
       //타인의 친구목록을 볼 때는 검증을 거침

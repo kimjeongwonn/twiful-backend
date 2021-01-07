@@ -17,6 +17,7 @@ import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Profile } from '../profile/models/profile.model';
 import { Taste } from './models/taste.model';
 import { TasteService } from './taste.service';
+import { PaginationArgs } from 'src/user/user.resolver';
 
 export enum tasteMethod {
   like = 'like',
@@ -87,5 +88,13 @@ export class TasteResolver {
     @Context() ctx: Express.Context,
   ) {
     return this.tasteService.toggleTaste(ctx.req.user, data);
+  }
+
+  @Mutation(returns => [Taste])
+  async findTaste(
+    @Args('keyword') keyword: string,
+    @Args('page', { nullable: true }) page?: PaginationArgs,
+  ) {
+    return this.tasteService.findTaste(keyword, page);
   }
 }

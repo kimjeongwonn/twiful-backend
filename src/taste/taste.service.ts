@@ -5,6 +5,8 @@ import {
   Connection,
   FindConditions,
   FindOneOptions,
+  Like,
+  MoreThan,
   ObjectID,
   Repository,
 } from 'typeorm';
@@ -14,6 +16,7 @@ import { Taste } from './models/taste.model';
 import { tasteMethod } from './taste.resolver';
 import { Review } from '../review/models/review.model';
 import { TasteRelation } from './models/tasteRelation.model';
+import { PaginationArgs } from '../user/user.resolver';
 
 @Injectable()
 export class TasteService {
@@ -71,6 +74,16 @@ export class TasteService {
   async createTaste(name: string) {
     const newTaste = await this.tasteRepository.create({ name });
     return this.tasteRepository.save(newTaste);
+  }
+
+  async findTaste(
+    keyword: string,
+    page: PaginationArgs = { take: 20, cursor: 0 },
+  ) {
+    return this.tasteRepository.find({
+      where: { id: MoreThan(page.cursor), name: Like(`%${keyword}%`) },
+      take: page.take,
+    });
   }
 
   async toggleTaste(
