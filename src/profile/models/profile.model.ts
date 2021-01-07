@@ -1,14 +1,10 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
-import { TasteRelation } from '../../taste/models/tasteRelation.model';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -16,7 +12,7 @@ import {
 import { Notice } from '../../notice/models/notice.model';
 import { Recruit } from '../../recruit/models/recruit.model';
 import { Review } from '../../review/models/review.model';
-import { Taste } from '../../taste/models/taste.model';
+import { TasteRelation } from '../../taste/models/tasteRelation.model';
 import { User } from '../../user/models/user.model';
 import { Link } from './link.model';
 
@@ -90,20 +86,6 @@ export class Profile {
   )
   @Field(type => Recruit)
   recruit: Recruit;
-
-  @OneToMany(
-    type => Notice,
-    notice => notice.from,
-  )
-  @Field(type => [Notice])
-  sendedNotice: Notice[];
-
-  @OneToMany(
-    type => Notice,
-    notice => notice.to,
-  )
-  @Field(type => [Notice])
-  receivedNotice: Notice[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createAt: Date;

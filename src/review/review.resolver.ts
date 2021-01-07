@@ -31,8 +31,8 @@ export class ReviewInputType {
   toId: number;
   @Field(type => reviewType)
   toType: reviewType;
-  @Field({ nullable: true })
-  text?: string;
+  @Field()
+  text: string;
 }
 
 @Resolver(of => Review)

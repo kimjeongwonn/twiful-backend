@@ -11,6 +11,7 @@ import {
   Resolver,
   Root,
 } from '@nestjs/graphql';
+import { Notice } from 'src/notice/models/notice.model';
 import { GqlAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Profile } from '../profile/models/profile.model';
 import { ArrayUtil } from '../util/util.array';
@@ -53,6 +54,11 @@ export class UserResolver {
   async friendsCount(@Root() root: User): Promise<number> {
     //친구 수 세기
     return this.userService.countFriends(root.id);
+  }
+
+  @ResolveField(returns => [Notice])
+  async notices(@Root() root: User, @Context() ctx: Express.Context) {
+    return this.userService.getUserToNotice(ctx.req.user);
   }
 
   @ResolveField(returns => [User])
@@ -124,7 +130,7 @@ export class UserResolver {
   }
 
   @Query(returns => User)
-  async lookUserNonCert(@Args('id', { type: () => Int }) id: number) {
+  async lookUserWithoutAuth(@Args('id', { type: () => Int }) id: number) {
     return this.userService.findOne({ id });
   }
 

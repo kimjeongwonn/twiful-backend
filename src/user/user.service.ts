@@ -9,6 +9,7 @@ import {
   Repository,
 } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
+import { Notice } from '../notice/models/notice.model';
 import { ProfileService } from '../profile/profile.service';
 import { RecruitService } from '../recruit/recruit.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -23,6 +24,7 @@ export class UserService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(FriendRelation)
     private friendRelationRepository: Repository<FriendRelation>,
+    @InjectRepository(Notice) private noticeRepository: Repository<Notice>,
     private recruitService: RecruitService,
     private twitterService: TwitterService,
     private authService: AuthService,
@@ -52,6 +54,10 @@ export class UserService {
   async getUserToProfile(id) {
     //연결된 프로필 가져오기
     return this.profileService.findOne({ user: { id } });
+  }
+
+  async getUserToNotice(user: User) {
+    return this.noticeRepository.find({ where: { to: user } });
   }
 
   //친구상태 확인
@@ -357,17 +363,25 @@ export class UserService {
         //타겟 유저의 사용자 정보를 받아오기(토큰과 시크릿)
         const user = await this.authService.getUserData(rawUser.id);
         const targetUser = await this.authService.getUserData(targetUserId);
-        const mystatus = await this.twitterService.relationCheck(
+        const myStatus = await this.twitterService.relationCheck(
           targetUser,
           user.twitterId,
         );
-        const targetstatus = await this.twitterService.relationCheck(
+        const targetStatus = await this.twitterService.relationCheck(
           user,
           targetUser.twitterId,
         );
+        if (myStatus === 'blocked' || targetStatus === 'blocked')
+          throw new Error('차단된 계정');
         //서로 맞팔하기
         await this.twitterService.followUser(targetUser, user.twitterId);
         await this.twitterService.followUser(user, targetUser.twitterId);
+        const newNotice = await this.noticeRepository.create({
+          from: targetUser,
+          to: user,
+          type: 'ACCEPT_FRIEND_REQUEST',
+        });
+        await this.noticeRepository.save(newNotice);
       } catch (err) {
         //트위터 API 오류 발생시
         if (err[0].code === 162) {
@@ -397,6 +411,7 @@ export class UserService {
           concluded: true,
           concludedAt: new Date(),
         });
+
         return true;
       }
       //최초의 경우 친구관계 생성
@@ -453,6 +468,12 @@ export class UserService {
       message: message,
     });
     await this.friendRelationRepository.save(newRelation);
+    const newNotice = await this.noticeRepository.create({
+      from: user,
+      to: targetUser,
+      type: 'SEND_FRIEND_REQUEST',
+    });
+    await this.noticeRepository.save(newNotice);
     return true;
   }
 

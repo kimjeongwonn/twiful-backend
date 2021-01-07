@@ -1,15 +1,16 @@
-import { Field, ID, Int, ObjectType, Parent } from '@nestjs/graphql';
-import { Profile } from '../../profile/models/profile.model';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Notice } from '../../notice/models/notice.model';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  OneToOne,
-  OneToMany,
   CreateDateColumn,
-  ManyToMany,
+  Entity,
   JoinTable,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Profile } from '../../profile/models/profile.model';
 import { FriendRelation } from './friendRelation.model';
 
 @Entity()
@@ -57,6 +58,20 @@ export class User {
   @Column({ default: true })
   @Field(type => Boolean)
   publicFriends: boolean;
+
+  @OneToMany(
+    type => Notice,
+    notice => notice.from,
+  )
+  @Field(type => [Notice])
+  sendedNotice: Notice[];
+
+  @OneToMany(
+    type => Notice,
+    notice => notice.to,
+  )
+  @Field(type => [Notice])
+  receivedNotice: Notice[];
 
   @ManyToMany(
     type => User,

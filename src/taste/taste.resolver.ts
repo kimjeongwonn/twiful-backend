@@ -78,8 +78,13 @@ export class TasteResolver {
     return;
   }
 
-  @Query(returns => Taste)
-  async lookAllTaste() {}
+  @Query(returns => [Taste])
+  async findTaste(
+    @Args('keyword') keyword: string,
+    @Args('page', { nullable: true }) page?: PaginationArgs,
+  ) {
+    return this.tasteService.findTaste(keyword, page);
+  }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(returns => Boolean)
@@ -88,13 +93,5 @@ export class TasteResolver {
     @Context() ctx: Express.Context,
   ) {
     return this.tasteService.toggleTaste(ctx.req.user, data);
-  }
-
-  @Mutation(returns => [Taste])
-  async findTaste(
-    @Args('keyword') keyword: string,
-    @Args('page', { nullable: true }) page?: PaginationArgs,
-  ) {
-    return this.tasteService.findTaste(keyword, page);
   }
 }

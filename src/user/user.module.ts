@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Notice } from '../notice/models/notice.model';
 import { ProfileModule } from 'src/profile/profile.module';
 import { RecruitModule } from 'src/recruit/recruit.module';
 import { AuthModule } from '../auth/auth.module';
@@ -17,7 +18,7 @@ import { UserService } from './user.service';
     ProfileModule,
     TwitterModule,
     UtilModule,
-    TypeOrmModule.forFeature([User, FriendRelation]),
+    TypeOrmModule.forFeature([User, FriendRelation, Notice]),
   ],
   providers: [UserService, UserResolver],
   exports: [UserService],

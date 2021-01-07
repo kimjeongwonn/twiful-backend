@@ -6,11 +6,13 @@ import { Review } from './models/review.model';
 import { ReviewInputType, reviewType } from './review.resolver';
 import { ProfileService } from '../profile/profile.service';
 import { TasteService } from '../taste/taste.service';
+import { Notice } from '../notice/models/notice.model';
 
 @Injectable()
 export class ReviewService {
   constructor(
     @InjectRepository(Review) private reviewRepository: Repository<Review>,
+    @InjectRepository(Notice) private noticeRepository: Repository<Notice>,
     private profileService: ProfileService,
     private tasteService: TasteService,
   ) {}
@@ -55,7 +57,7 @@ export class ReviewService {
 
   async writeReview(user: User, input: ReviewInputType) {
     //userID가 아니라 profileID를 받음!
-    if (!input.text) throw new Error('내용을 필수입니다.');
+    if (!input.text) throw new Error('내용은 필수입니다.');
     const existReview = await this.reviewRepository.findOne({
       [input.toType]: { id: input.toId },
     });
@@ -67,11 +69,26 @@ export class ReviewService {
         ? await this.profileService.findOne(input.toId)
         : null;
     if (!target) throw new Error('타겟이 없습니다!');
+    const profile = await user.getProfile();
+    if (input.toType === 'toProfile' && profile.id === input.toId)
+      throw new Error('자기 자신에게 리뷰를 달 수 없습니다.');
     const newReview = this.reviewRepository.create({
       [input.toType]: target,
       text: input.text,
-      author: await user.getProfile(),
+      author: profile,
     });
+    if (input.toType === 'toProfile') {
+      //프로필에 리뷰를 달면 알림전송
+      const newNotice = await this.noticeRepository.create({
+        from: user,
+        to: (
+          await this.profileService.findOne(input.toId, { relations: ['user'] })
+        ).user,
+        type: 'WRITED_REVIEW',
+      });
+      await this.noticeRepository.save(newNotice);
+    }
+
     return this.reviewRepository.save(newReview);
   }
   async editReview(user: User, id: number, text: string) {
